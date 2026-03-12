@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module: DailyLog</title>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--muted:#334155;--border:#1f2937;--fg:#e5e7eb;--acc:#22c55e;--warn:#f59e0b;--err:#ef4444;--feedback:#38bdf8}
+    html,body{background:#0b1220;color:var(--fg);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial}
+    .wrap{max-width:800px;margin:40px auto;padding:24px}
+    .card{background:linear-gradient(180deg,#0f172a,#0b1220);border:1px solid var(--border);border-radius:18px;padding:32px;box-shadow:0 10px 30px #0003}
+    h1{font-size:1.6rem;margin:0 0 8px; color:var(--acc)}
+    p.desc{color:#94a3b8;margin:0 0 24px}
+    
+    form{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .full{grid-column:1/-1}
+    label{display:block;font-size:.9rem;margin-bottom:8px;color:#cbd5e1;font-weight:600}
+    
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--fg);
+      padding: 12px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus, textarea:focus{border-color: var(--acc)}
+    textarea{min-height:100px;resize:vertical}
+    
+    /* สไตล์สำหรับ Feedback Area */
+    .feedback-label { color: var(--feedback) !important; }
+    .feedback-input { border-color: rgba(56, 189, 248, 0.3); }
+    .feedback-input:focus { border-color: var(--feedback); }
+
+    .check-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      background: rgba(245, 158, 11, 0.05);
+      border: 1px dashed var(--warn);
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .check-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .check-text { color: var(--warn); font-weight: bold; }
+
+    .btn{cursor:pointer;font-weight:600; border:none; margin-top:15px; font-size: 1rem; transition: 0.3s;}
+    .primary{background:linear-gradient(90deg,#16a34a,#22c55e); color:#062d13}
+    .primary:hover{opacity:0.9}
+    .primary:disabled{background:#334155; color:#94a3b8; cursor:not-allowed;}
+    
+    .status{display:block;margin-top:12px; text-align:center}
+    .ok{color:var(--acc)}
+    .loading-text { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>DailyLog</h1>
+      <p class="desc">Module สำหรับบันทึกรายละเอียดการทำงานและ Feedback รายบริษัท</p>
+
+      <form id="formDaily">
+        <div>
+          <label>Date</label>
+          <input type="date" name="logDate" id="logDate" required />
+        </div>
+        <div>
+          <label>Staff (PIC)</label>
+          <input name="staff" list="staffList" placeholder="เลือกชื่อผู้บันทึก" required />
+          <datalist id="staffList">
+            <option value="Gear"></option>
+            <option value="Wim"></option>
+            <option value="Cream"></option>
+            <option value="Fern"></option>
+            <option value="Tham"></option>
+          </datalist>
+        </div>
+
+        <div class="full">
+          <label>Company Name <span id="loadingCompany" class="loading-text">(กำลังโหลดรายชื่อบริษัท...)</span></label>
+          <input name="company" list="companyList" placeholder="พิมพ์ชื่อบริษัทลูกค้าเพื่อบันทึกงาน" required autocomplete="off" />
+          <datalist id="companyList">
+            </datalist>
+        </div>
+
+        <div class="full">
+          <label>Work Details (สิ่งที่ทำไปวันนี้)</label>
+          <textarea name="workDetail" placeholder="ระบุรายละเอียดงานที่ทำให้กับบริษัทนี้..." required></textarea>
+        </div>
+
+        <div class="full">
+          <label class="feedback-label">Customer Feedback / Comment</label>
+          <textarea name="customerFeedback" class="feedback-input" placeholder="ระบุสิ่งที่ลูกค้าติชม หรือหมายเหตุเพิ่มเติมจากลูกค้า..."></textarea>
+        </div>
+
+        <div class="full">
+          <label class="check-container">
+            <input type="checkbox" name="needSupport" id="needSupport">
+            <span class="check-text">⚠️ Blocker / Need Support (ต้องการความช่วยเหลือหรือติดปัญหา)</span>
+          </label>
+        </div>
+
+        <div class="full">
+          <button type="submit" id="submitBtn" class="btn primary">บันทึกข้อมูล (Save Log)</button>
+          <div id="statusMsg" class="status"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ตั้งค่า URL ของ Web App
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+
+    // ตั้งค่าวันที่ปัจจุบันเป็น Default
+    document.getElementById('logDate').valueAsDate = new Date();
+
+    // ฟังก์ชันดึงรายชื่อบริษัทจาก Sheet
+    async function fetchCompanies() {
+      const loadingText = document.getElementById('loadingCompany');
+      const companyList = document.getElementById('companyList');
+      
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getCompanies");
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          // ล้างข้อมูลเก่าและใส่ข้อมูลใหม่
+          companyList.innerHTML = '';
+          result.data.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company;
+            companyList.appendChild(option);
+          });
+          loadingText.innerText = "(โหลดรายชื่อเสร็จสมบูรณ์ ✓)";
+          loadingText.style.color = "var(--acc)";
+          setTimeout(() => loadingText.style.display = 'none', 3000);
+        } else {
+          loadingText.innerText = "(โหลดรายชื่อล้มเหลว)";
+          loadingText.style.color = "var(--err)";
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+        loadingText.innerText = "(ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้)";
+        loadingText.style.color = "var(--err)";
+      }
+    }
+
+    // เรียกดึงข้อมูลบริษัทตอนเปิดหน้าเว็บ
+    fetchCompanies();
+
+    // จัดการการส่งฟอร์ม
+    const form = document.getElementById('formDaily');
+    const statusMsg = document.getElementById('statusMsg');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // ล็อกปุ่ม
+      const originalBtnText = submitBtn.innerText;
+      submitBtn.innerText = "กำลังบันทึกข้อมูล...";
+      submitBtn.disabled = true;
+      statusMsg.innerText = "";
+      
+      // รวบรวมข้อมูล
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      data.needSupport = document.getElementById('needSupport').checked;
+      data.action = "addDailyLog"; // ระบุ action ให้ Apps Script รู้ว่าเป็น DailyLog
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          statusMsg.innerText = "✅ บันทึกข้อมูลเรียบร้อยแล้ว";
+          statusMsg.className = "status ok";
+          
+          // ล้างข้อมูลหลังบันทึก (เว้นวันที่กับผู้บันทึกไว้เผื่อบันทึกต่อ)
+          form.company.value = "";
+          form.workDetail.value = "";
+          form.customerFeedback.value = "";
+          document.getElementById('needSupport').checked = false;
+        } else {
+          alert("❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      } finally {
+        submitBtn.innerText = originalBtnText;
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Main Hub | Project Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0b1220; --card: #111827; --border: #1f2937;
+      --acc: #22c55e; --blue: #3b82f6; --gold: #f59e0b;
+    }
+    body { background-color: var(--bg); color: #e5e7eb; font-family: ui-sans-serif, system-ui, sans-serif; overflow-x: hidden; }
+    .nav-card {
+      background: linear-gradient(145deg, #111827, #0f172a);
+      border: 1px solid var(--border); transition: all 0.3s ease;
+    }
+    .nav-card:hover {
+      border-color: var(--acc); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .icon-box {
+      width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+      border-radius: 12px; margin-bottom: 1rem;
+    }
+    
+    /* อนิเมชันกระพริบสำหรับกล่องแจ้งเตือน (ทุก 0.75 วินาที) */
+    @keyframes blinkWarning {
+      0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+      50% { opacity: 0.3; box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+    }
+    .alert-box {
+      animation: blinkWarning 0.75s infinite;
+      transition: opacity 0.3s ease;
+    }
+    .alert-box:hover {
+      /* หยุดกระพริบเมื่อเอาเมาส์ไปชี้ เพื่อให้กดปุ่มง่ายขึ้น */
+      animation: none; opacity: 1; box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6 relative">
+
+  <div class="max-w-5xl w-full text-center mb-12">
+    <h1 class="text-4xl font-extrabold text-white mb-2">Internal Management System</h1>
+    <p class="text-gray-400 italic">ระบบจัดการข้อมูลลูกค้าและตารางงานโรงงาน</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
+    <a href="New customer.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+      <div class="icon-box bg-blue-500/10 text-blue-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">New Customer</h3>
+      <p class="text-gray-400 text-sm mb-4">สำหรับทีม Sales เพิ่มข้อมูลลูกค้าใหม่และรายละเอียด PIC</p>
+      <span class="text-blue-500 text-xs font-semibold uppercase tracking-wider">Sales Team Only →</span>
+    </a>
+
+    <a href="Dailylog.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left border-l-4 border-l-green-500">
+      <div class="icon-box bg-green-500/10 text-green-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">DailyLog</h3>
+      <p class="text-gray-400 text-sm mb-4">สำหรับทีม CS บันทึกงานรายวัน, Feedback และปัญหาที่พบ</p>
+      <span class="text-green-500 text-xs font-semibold uppercase tracking-wider">CS Team Only →</span>
+    </a>
+
+    <a href="Schedule.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+      <div class="icon-box bg-orange-500/10 text-orange-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">Schedule</h3>
+      <p class="text-gray-400 text-sm mb-4">จัดทำตารางเวลาและกำหนดการรายบริษัท (Individual Plan)</p>
+      <span class="text-orange-500 text-xs font-semibold uppercase tracking-wider">Planning →</span>
+    </a>
+
+    <a href="Schedule Overview.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+      <div class="icon-box bg-purple-500/10 text-purple-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">Overview</h3>
+      <p class="text-gray-400 text-sm mb-4">ภาพรวมตารางงานทั้งบริษัทในเดือนนี้และเดือนถัดไป</p>
+      <span class="text-purple-500 text-xs font-semibold uppercase tracking-wider">All Staff / Viewer →</span>
+    </a>
+  </div>
+
+  <div class="mt-16 text-gray-500 text-xs text-center border-t border-gray-800 pt-8 w-full max-w-4xl pb-16">
+    <p>ระบบจัดการโรงงานอัจฉริยะ • พัฒนาเพื่อความลื่นไหลของงาน Sales และ Customer Service</p>
+  </div>
+
+  <div id="alertContainer" class="fixed bottom-6 left-0 w-full flex flex-col items-center gap-4 z-50 pointer-events-none px-4">
+    </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+
+    // ดึงข้อมูลแจ้งเตือนเมื่อเปิดหน้าเว็บ
+    async function fetchAlerts() {
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getAlerts");
+        const result = await response.json();
+        
+        if (result.status === 'success' && result.data.length > 0) {
+          renderAlerts(result.data);
+        }
+      } catch (error) {
+        console.error("ไม่สามารถดึงข้อมูลแจ้งเตือนได้:", error);
+      }
+    }
+
+    // สร้าง UI กล่องแจ้งเตือน
+    function renderAlerts(alerts) {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = ''; // ล้างของเก่า
+
+      alerts.forEach(alert => {
+        // จัดการฟอร์แมตวันที่ให้อ่านง่าย
+        let dateObj = new Date(alert.date);
+        let dateStr = isNaN(dateObj) ? alert.date : dateObj.toLocaleDateString('th-TH');
+
+        const box = document.createElement('div');
+        // เปิด pointer-events เฉพาะตัวกล่อง เพื่อให้กดปุ่มได้
+        box.className = "alert-box pointer-events-auto bg-red-600 border border-red-400 rounded-xl p-4 flex items-center justify-between w-full max-w-2xl shadow-2xl";
+        box.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="bg-red-800 p-3 rounded-full flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <div class="text-white">
+              <p class="text-xs font-bold text-red-200 uppercase tracking-widest">⚠️ Need Support (Blocker)</p>
+              <h4 class="text-xl font-extrabold mt-1">${alert.company}</h4>
+              <p class="text-sm mt-1 text-red-100">รายงานโดย: <strong>${alert.staff}</strong> | วันที่: ${dateStr}</p>
+            </div>
+          </div>
+          <button onclick="takeAction(${alert.row}, this)" class="bg-white text-red-600 hover:bg-red-100 font-bold px-6 py-3 rounded-lg shadow-lg transition duration-200 whitespace-nowrap ml-4">
+            Take Action
+          </button>
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    // ฟังก์ชันเมื่อผู้ใช้กดปุ่ม Take Action
+    async function takeAction(rowId, btnElement) {
+      const alertBox = btnElement.closest('.alert-box');
+      
+      // เปลี่ยน UI ระหว่างรอโหลด
+      alertBox.style.animation = "none"; // หยุดกระพริบ
+      btnElement.innerText = "กำลังอัปเดต...";
+      btnElement.disabled = true;
+      btnElement.classList.add("opacity-70", "cursor-not-allowed");
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: "takeAction", row: rowId })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          // ทำให้กล่องค่อยๆ จางหายไปก่อนลบออกจากหน้าจอ
+          alertBox.style.opacity = '0';
+          setTimeout(() => alertBox.remove(), 300);
+        } else {
+          alert("❌ เกิดข้อผิดพลาด: " + result.message);
+          resetButton(alertBox, btnElement);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        resetButton(alertBox, btnElement);
+      }
+    }
+
+    function resetButton(box, btn) {
+      box.style.animation = "blinkWarning 0.75s infinite"; // กลับมากระพริบ
+      btn.innerText = "Take Action";
+      btn.disabled = false;
+      btn.classList.remove("opacity-70", "cursor-not-allowed");
+    }
+
+    // เรียกฟังก์ชันเมื่อโหลดหน้าเสร็จ
+    window.onload = () => {
+      fetchAlerts();
+      // เช็คแจ้งเตือนซ้ำทุกๆ 30 วินาทีเผื่อมีการเปิดหน้า Index ทิ้งไว้
+      setInterval(fetchAlerts, 30000); 
+    };
+  </script>
+</body>
+</html>

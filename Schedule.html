@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module: Schedule</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--muted:#334155;--border:#1f2937;--fg:#e5e7eb;--acc:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6;--batch-bg:#1e293b}
+    html,body{background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,sans-serif;}
+    .wrap{max-width:1000px;margin:40px auto;padding:24px}
+    .card{background:linear-gradient(180deg,#111827,#0b1220);border:1px solid var(--border);border-radius:18px;padding:32px;box-shadow:0 10px 30px #0003}
+    h1{font-size:1.6rem;margin:0 0 8px; color:var(--warn)}
+    p.desc{color:#94a3b8;margin:0 0 24px}
+    
+    .top-section{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+    label{display:block;font-size:.9rem;margin-bottom:8px;color:#cbd5e1;font-weight:600}
+    
+    input, select, button {
+      border-radius: 8px; border: 1px solid var(--border);
+      background: #0b1220; color: var(--fg); padding: 10px; outline: none; width: 100%; box-sizing: border-box;
+    }
+    input:focus, select:focus{border-color: var(--warn)}
+    
+    .task-row { display:grid; grid-template-columns: 2.5fr 1fr 1fr 1fr auto; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .task-name { font-weight: 500; color: #e2e8f0; }
+    .auto-text { color: var(--acc); font-weight: bold; font-size: 0.9rem; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; text-align: center;}
+    
+    .batch-container { margin-top: 30px; }
+    .batch-card { background: var(--batch-bg); border: 1px dashed var(--muted); border-radius: 12px; padding: 20px; margin-bottom: 20px; position: relative;}
+    .batch-title { font-size: 1.2rem; font-weight: bold; color: var(--blue); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
+    .remove-btn { background: transparent; border: 1px solid var(--err); color: var(--err); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; width: auto;}
+    .remove-btn:hover { background: var(--err); color: #fff;}
+
+    .btn{cursor:pointer;font-weight:600; border:none; padding:12px 20px; border-radius: 8px; transition: 0.2s;}
+    .primary{background:linear-gradient(90deg,#f59e0b,#ea580c); color:#fff; width: 100%;}
+    .primary:disabled{background:#334155; color:#94a3b8; cursor:not-allowed;}
+    .add-btn{background: transparent; border: 1px dashed var(--blue); color: var(--blue); width: 100%; padding: 15px; margin-top: 10px; margin-bottom: 20px;}
+    .add-btn:hover{background: rgba(59, 130, 246, 0.1);}
+    
+    .pdf-btn { background: #3b82f6; color: #fff; border: 1px solid #2563eb; width: 100%; margin-bottom: 10px;}
+    .pdf-btn:hover { background: #2563eb; }
+
+    #loadingOverlay { display: none; padding: 10px; background: rgba(59,130,246,0.1); color: var(--blue); text-align: center; border-radius: 8px; margin-bottom: 20px; font-weight: bold;}
+    
+    /* สไตล์สำหรับตาราง PDF (จะซ่อนไว้เวลาปกติ) */
+    #ganttExportArea { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>📅 Schedule Planning</h1>
+      <p class="desc">วางแผนตารางงานรายปีสำหรับลูกค้า (ซิงค์กับ Google Sheets)</p>
+
+      <div class="top-section">
+        <div>
+          <label>Select Company <span id="companyLoadStatus" style="font-size:0.8rem; color:var(--acc)">(กำลังโหลด...)</span></label>
+          <select id="companySelect">
+            <option value="">-- เลือกบริษัทลูกค้า --</option>
+          </select>
+        </div>
+        <div>
+          <label>Contract Start Month</label>
+          <input type="month" id="contractStart" />
+        </div>
+      </div>
+
+      <div id="loadingOverlay">กำลังโหลดข้อมูล Schedule เดิม... ⏳</div>
+
+      <div id="scheduleFormArea" style="opacity: 0.5; pointer-events: none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+          <h3 style="color:#e2e8f0; margin:0;">📌 Base Setup (เริ่มต้นโปรเจกต์)</h3>
+          <button type="button" class="btn" style="background:var(--acc); color:#fff; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="addCustomBaseTask()">+ เพิ่ม Process</button>
+        </div>
+        
+        <div id="baseTasks"></div>
+
+        <div class="batch-container" id="batchContainer"></div>
+
+        <button type="button" class="btn add-btn" onclick="addBatch()">+ Add Batch (เพิ่มชุดงานเขียนบทความ)</button>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <button type="button" id="exportPdfBtn" class="btn pdf-btn" onclick="exportGanttPDF()">📥 Export PDF (Gantt Chart)</button>
+          <button type="button" id="saveBtn" class="btn primary" onclick="saveSchedule()">💾 บันทึก Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ganttExportArea"></div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+    
+    const getWeekOptions = (val) => `<option value="">Week</option>` + ['W1','W2','W3','W4'].map(w => `<option value="${w}" ${val===w?'selected':''}>${w}</option>`).join('');
+    const getMonthOptions = (val) => {
+      let opts = `<option value="">Month</option>`;
+      for(let i=1; i<=12; i++) opts += `<option value="M${i}" ${val===('M'+i)?'selected':''}>M${i}</option>`;
+      return opts;
+    };
+
+    let companyDataMap = {}; 
+
+    async function fetchCompanies() {
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getCompanyDetails");
+        const result = await response.json();
+        if (result.status === 'success') {
+          const select = document.getElementById('companySelect');
+          result.data.forEach(item => {
+            companyDataMap[item.name] = item.startMonth;
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            opt.innerText = item.name;
+            select.appendChild(opt);
+          });
+          document.getElementById('companyLoadStatus').style.display = 'none';
+          document.getElementById('scheduleFormArea').style.opacity = '1';
+          document.getElementById('scheduleFormArea').style.pointerEvents = 'auto';
+        }
+      } catch (e) {
+        document.getElementById('companyLoadStatus').innerText = "(โหลดไม่สำเร็จ)";
+        document.getElementById('companyLoadStatus').style.color = "var(--err)";
+      }
+    }
+    fetchCompanies();
+
+    document.getElementById('companySelect').addEventListener('change', async function(e) {
+      const company = e.target.value;
+      const startInput = document.getElementById('contractStart');
+      
+      document.getElementById('baseTasks').innerHTML = '';
+      document.getElementById('batchContainer').innerHTML = '';
+      batchCount = 0;
+
+      if (!company) {
+        startInput.value = '';
+        renderDefaultBaseTasks();
+        addBatch();
+        return;
+      }
+
+      startInput.value = companyDataMap[company] || '';
+      document.getElementById('loadingOverlay').style.display = 'block';
+
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getSchedule&company=" + encodeURIComponent(company));
+        const result = await response.json();
+        
+        if (result.status === 'success') buildFormFromData(result.data);
+        else { renderDefaultBaseTasks(); addBatch(); }
+      } catch (error) {
+        renderDefaultBaseTasks(); addBatch();
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
+    });
+
+    function addStandardBaseTask(name, week='', month='') {
+      const div = document.createElement('div');
+      div.className = 'task-row base-task'; div.dataset.type = 'standard';
+      div.innerHTML = `<div class="task-name">• ${name}</div><select class="val-week">${getWeekOptions(week)}</select><select class="val-month">${getMonthOptions(month)}</select><div></div><button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
+      document.getElementById('baseTasks').appendChild(div);
+    }
+
+    function addCustomBaseTask(name='', week='', month='') {
+      const div = document.createElement('div');
+      div.className = 'task-row base-task'; div.dataset.type = 'custom';
+      div.innerHTML = `<input type="text" class="custom-name" placeholder="พิมพ์ชื่อ Process..." value="${name}"><select class="val-week">${getWeekOptions(week)}</select><select class="val-month">${getMonthOptions(month)}</select><div></div><button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
+      document.getElementById('baseTasks').appendChild(div);
+    }
+
+    function renderDefaultBaseTasks() {
+      ["Kick-off JP", "Kick-off TH", "Document received", "Create Basic page"].forEach(t => addStandardBaseTask(t));
+    }
+
+    let batchCount = 0;
+    function addBatch(data = null) {
+      batchCount++;
+      const batchId = `batch_${batchCount}`;
+      const container = document.getElementById('batchContainer');
+      const d = data || { tasks: [], publish: {} };
+      const getTask = (name) => d.tasks.find(t => t.name === name) || {};
+
+      const batchHtml = `
+        <div class="batch-card" id="${batchId}">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="batch-title">📦 Content Batch #${batchCount}</div>
+            <button type="button" class="remove-btn" onclick="document.getElementById('${batchId}').remove()">ลบ Batch นี้</button>
+          </div>
+          <div class="batch-task-list">
+            ${generateBatchTask('Writing & finalizing article titles', true, getTask('Writing & finalizing article titles'))}
+            ${generateBatchTask('Title review', false, getTask('Title review'))}
+            ${generateBatchTask('Customer confirmation', false, getTask('Customer confirmation'))}
+            ${generateBatchTask('Writing articles', true, getTask('Writing articles'))}
+            ${generateBatchTask('Content review', false, getTask('Content review'))}
+          </div>
+          ${generateBatchPublish(batchId, d.publish)}
+          <div class="task-row" style="margin-top:20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+            <div class="task-name" style="color:var(--warn)">✨ Improve page & Public (Auto)</div>
+            <div class="auto-text p1">Phase 1: -</div>
+            <div class="auto-text p2">Phase 2: -</div>
+            <div class="auto-text p3">Phase 3: -</div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', batchHtml);
+      calculateImprove(batchId);
+    }
+
+    function generateBatchTask(taskName, needsNumber, savedData) {
+      const numInput = needsNumber ? `<input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}">` : `<div></div>`;
+      return `<div class="task-row normal-task"><div class="task-name-text">- ${taskName}</div><select class="val-week">${getWeekOptions(savedData.week||'')}</select><select class="val-month">${getMonthOptions(savedData.month||'')}</select>${numInput}<div></div></div>`;
+    }
+
+    function generateBatchPublish(batchId, savedData) {
+      return `<div class="task-row publish-task" style="background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;"><div class="task-name-text" style="color:var(--blue)">- Publish articles</div><select class="val-week" onchange="calculateImprove('${batchId}')">${getWeekOptions(savedData.week||'')}</select><select class="val-month" onchange="calculateImprove('${batchId}')">${getMonthOptions(savedData.month||'')}</select><input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}"><div></div></div>`;
+    }
+
+    function calculateImprove(batchId) {
+      const card = document.getElementById(batchId);
+      if(!card) return;
+      const pubRow = card.querySelector('.publish-task');
+      const weekVal = pubRow.querySelector('.val-week').value;
+      const monthStr = pubRow.querySelector('.val-month').value;
+      const p1 = card.querySelector('.p1'), p2 = card.querySelector('.p2'), p3 = card.querySelector('.p3');
+
+      if (!weekVal || !monthStr) {
+        p1.innerText = "Phase 1: -"; p2.innerText = "Phase 2: -"; p3.innerText = "Phase 3: -"; return;
+      }
+      let mNum = parseInt(monthStr.replace('M', ''));
+      const getNextMonth = (base, add) => { let r = base + add; return r > 12 ? r - 12 : r; };
+      p1.innerText = `Phase 1: ${weekVal}-M${getNextMonth(mNum, 2)}`;
+      p2.innerText = `Phase 2: ${weekVal}-M${getNextMonth(mNum, 4)}`;
+      p3.innerText = `Phase 3: ${weekVal}-M${getNextMonth(mNum, 6)}`;
+    }
+
+    function buildFormFromData(data) {
+      document.getElementById('contractStart').value = data.contractStart || '';
+      (data.baseTasks || []).forEach(task => {
+        if (task.type === 'custom') addCustomBaseTask(task.name, task.week, task.month);
+        else addStandardBaseTask(task.name, task.week, task.month);
+      });
+      (data.batches || []).forEach(batchData => addBatch(batchData));
+    }
+
+    // ฟังก์ชันรวบรวมข้อมูลทั้งหมด (แยกมาเพื่อให้ Export PDF ใช้ร่วมกันได้)
+    function collectScheduleData() {
+      const scheduleData = {
+        contractStart: document.getElementById('contractStart').value,
+        baseTasks: [],
+        batches: []
+      };
+
+      document.querySelectorAll('#baseTasks .base-task').forEach(row => {
+        const type = row.dataset.type;
+        const name = type === 'custom' ? row.querySelector('.custom-name').value : row.querySelector('.task-name').innerText.replace('• ', '');
+        scheduleData.baseTasks.push({ type: type, name: name, week: row.querySelector('.val-week').value, month: row.querySelector('.val-month').value });
+      });
+
+      document.querySelectorAll('.batch-card').forEach(card => {
+        const batch = { title: card.querySelector('.batch-title').innerText, tasks: [], publish: {}, improve: [] };
+        card.querySelectorAll('.normal-task').forEach(row => {
+          batch.tasks.push({ name: row.querySelector('.task-name-text').innerText.replace('- ', ''), week: row.querySelector('.val-week').value, month: row.querySelector('.val-month').value });
+        });
+        const pubRow = card.querySelector('.publish-task');
+        batch.publish = { name: 'Publish articles', week: pubRow.querySelector('.val-week').value, month: pubRow.querySelector('.val-month').value };
+        
+        // เก็บค่า Auto Improve ด้วย
+        const p1 = card.querySelector('.p1').innerText.replace('Phase 1: ', '');
+        const p2 = card.querySelector('.p2').innerText.replace('Phase 2: ', '');
+        const p3 = card.querySelector('.p3').innerText.replace('Phase 3: ', '');
+        if(p1 !== '-') batch.improve.push({ name: 'Improve Phase 1', week: p1.split('-')[0], month: p1.split('-')[1] });
+        if(p2 !== '-') batch.improve.push({ name: 'Improve Phase 2', week: p2.split('-')[0], month: p2.split('-')[1] });
+        if(p3 !== '-') batch.improve.push({ name: 'Improve Phase 3', week: p3.split('-')[0], month: p3.split('-')[1] });
+        
+        scheduleData.batches.push(batch);
+      });
+      return scheduleData;
+    }
+
+    async function saveSchedule() {
+      const company = document.getElementById('companySelect').value;
+      if (!company) return alert("กรุณาเลือกบริษัทก่อนบันทึก");
+
+      const btn = document.getElementById('saveBtn');
+      btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
+
+      const scheduleData = collectScheduleData();
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: "saveSchedule", company: company, scheduleData: scheduleData })
+        });
+        const result = await response.json();
+        if (result.status === 'success') alert("✅ บันทึก Schedule เรียบร้อยแล้ว!");
+        else alert("❌ เกิดข้อผิดพลาด: " + result.message);
+      } catch (e) {
+        alert("⚠️ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+      } finally {
+        btn.innerText = "💾 บันทึก Schedule"; btn.disabled = false;
+      }
+    }
+
+    // ----------------------------------------------------------------------------------
+    // ฟังก์ชันสร้าง PDF (Gantt Chart)
+    // ----------------------------------------------------------------------------------
+    function exportGanttPDF() {
+      const company = document.getElementById('companySelect').value;
+      if (!company) return alert("กรุณาเลือกบริษัทก่อน Export PDF");
+
+      const btn = document.getElementById('exportPdfBtn');
+      btn.innerText = "กำลังสร้าง PDF...";
+      btn.disabled = true;
+
+      const data = collectScheduleData();
+      const exportArea = document.getElementById('ganttExportArea');
+      
+      // วาดโครงสร้าง HTML สำหรับเป็นหน้า PDF
+      let html = `
+        <div id="pdfPrintArea" style="padding: 20px; background: #fff; color: #000; width: 1080px; font-family: sans-serif;">
+          <h2 style="text-align: center; color: #1e293b; margin-bottom: 5px;">Project Schedule (Gantt Chart)</h2>
+          <h3 style="text-align: center; color: #475569; margin-top: 0; margin-bottom: 20px;">Company: ${company} | Start: ${data.contractStart || 'N/A'}</h3>
+          
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center;">
+            <thead>
+              <tr>
+                <th rowspan="2" style="border: 1px solid #cbd5e1; padding: 8px; width: 20%; background: #f1f5f9;">Task Name</th>
+      `;
+      // สร้างหัวตาราง (เดือน M1 - M12)
+      for(let m=1; m<=12; m++) { html += `<th colspan="4" style="border: 1px solid #cbd5e1; background: #e2e8f0; padding: 4px;">Month ${m}</th>`; }
+      html += `</tr><tr>`;
+      // สร้างหัวตาราง (สัปดาห์ W1 - W4)
+      for(let m=1; m<=12; m++) {
+        for(let w=1; w<=4; w++) { html += `<th style="border: 1px solid #cbd5e1; background: #f8fafc; font-size: 9px; padding: 2px;">W${w}</th>`; }
+      }
+      html += `</tr></thead><tbody>`;
+
+      // ฟังก์ชันช่วยเติมสีลงช่องตาราง
+      const renderRow = (taskName, taskW, taskM, colorCode) => {
+        let rowHtml = `<tr><td style="border: 1px solid #cbd5e1; text-align: left; padding: 6px 8px; font-weight: bold;">${taskName}</td>`;
+        for(let m=1; m<=12; m++) {
+          for(let w=1; w<=4; w++) {
+            let bg = (taskM === 'M'+m && taskW === 'W'+w) ? colorCode : 'transparent';
+            rowHtml += `<td style="border: 1px solid #cbd5e1; background: ${bg};"></td>`;
+          }
+        }
+        rowHtml += `</tr>`;
+        return rowHtml;
+      };
+
+      // ใส่ข้อมูล Base Tasks (สีเขียว)
+      html += `<tr><td colspan="49" style="background:#f1f5f9; text-align:left; font-weight:bold; padding:4px 8px; border:1px solid #cbd5e1;">📌 Base Setup</td></tr>`;
+      data.baseTasks.forEach(task => { html += renderRow("• " + task.name, task.week, task.month, '#22c55e'); });
+
+      // ใส่ข้อมูล Batches (สีฟ้า, ม่วง, ส้ม)
+      data.batches.forEach(batch => {
+        html += `<tr><td colspan="49" style="background:#f1f5f9; text-align:left; font-weight:bold; padding:4px 8px; border:1px solid #cbd5e1;">${batch.title.replace('📦 ', '')}</td></tr>`;
+        batch.tasks.forEach(task => { html += renderRow("- " + task.name, task.week, task.month, '#3b82f6'); }); // Blue
+        html += renderRow("⭐ " + batch.publish.name, batch.publish.week, batch.publish.month, '#a855f7'); // Purple
+        batch.improve.forEach(imp => { html += renderRow("✨ " + imp.name, imp.week, imp.month, '#f59e0b'); }); // Orange
+      });
+
+      html += `</tbody></table></div>`;
+      exportArea.innerHTML = html;
+      exportArea.style.display = 'block';
+
+      // ตั้งค่าการ Export PDF ขนาด A4 แนวนอน (Landscape)
+      const opt = {
+        margin:       0.2,
+        filename:     `Schedule_${company}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+      };
+
+      // สั่ง Gen PDF
+      html2pdf().set(opt).from(document.getElementById('pdfPrintArea')).save().then(() => {
+        exportArea.style.display = 'none';
+        exportArea.innerHTML = '';
+        btn.innerText = "📥 Export PDF (Gantt Chart)";
+        btn.disabled = false;
+      });
+    }
+
+    window.onload = () => { renderDefaultBaseTasks(); addBatch(); };
+  </script>
+</body>
+</html>

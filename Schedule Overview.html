@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module: Overview Schedule</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0b1220; --card: #111827; --border: #1f2937;
+      --acc-green: #22c55e; --acc-blue: #3b82f6; --acc-purple: #a855f7; --acc-orange: #f59e0b;
+    }
+    body { background-color: var(--bg); color: #e5e7eb; font-family: ui-sans-serif, system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1000px; }
+    th, td { border: 1px solid var(--border); padding: 12px; vertical-align: top; }
+    th { background-color: #1e293b; color: #cbd5e1; font-weight: 600; text-align: center; }
+    .company-cell { background-color: #1e293b; font-weight: bold; cursor: pointer; transition: background 0.2s; white-space: nowrap; border-left: 4px solid var(--border);}
+    .company-cell:hover { background-color: #334155; color: #fff; border-left-color: var(--acc-blue);}
+    
+    .task-badge { 
+      font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; margin-bottom: 6px; 
+      display: block; cursor: pointer; text-align: center; font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s;
+    }
+    .task-badge:hover { filter: brightness(1.2); transform: scale(1.02); }
+    .badge-base { background: rgba(34, 197, 94, 0.2); color: var(--acc-green); border: 1px solid rgba(34, 197, 94, 0.4); }
+    .badge-b1 { background: rgba(59, 130, 246, 0.2); color: var(--acc-blue); border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-b2 { background: rgba(168, 85, 247, 0.2); color: var(--acc-purple); border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-improve { background: rgba(245, 158, 11, 0.2); color: var(--acc-orange); border: 1px solid rgba(245, 158, 11, 0.4); }
+
+    .slide-over { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+    .slide-over.open { transform: translateX(0); }
+    .timeline-item { position: relative; padding-left: 20px; margin-bottom: 16px; border-left: 2px solid var(--border); }
+    .timeline-dot { position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; }
+    
+    #loadingData { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #94a3b8; }
+    .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--acc-blue); animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="p-6">
+
+  <div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-extrabold text-white">📅 Overview Schedule</h1>
+        <p class="text-gray-400 mt-2">แผนงานภาพรวม (ดึงข้อมูล Real-time จากระบบ)</p>
+      </div>
+      <div class="flex gap-4 text-sm bg-[#111827] p-3 rounded-lg border border-gray-800">
+        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div> Base Setup</span>
+        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-500"></div> Content/Batch 1</span>
+        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div> Content/Batch 2</span>
+        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-orange-500"></div> Improve Page</span>
+      </div>
+    </div>
+
+    <div class="bg-[#111827] rounded-xl border border-gray-800 overflow-hidden shadow-2xl relative">
+      <div id="loadingData">
+        <div class="spinner"></div>
+        <p>กำลังซิงค์ข้อมูลตารางงานจากฐานข้อมูล...</p>
+      </div>
+      
+      <div class="overflow-x-auto" id="tableContainer" style="display: none;">
+        <table id="scheduleTable">
+          <thead>
+            <tr>
+              <th rowspan="2" class="w-48 text-left pl-4">รายชื่อบริษัท<br><span class="text-xs font-normal text-gray-400">(คลิกเพื่อดูรายละเอียด)</span></th>
+              <th colspan="4" class="text-blue-400" id="currentMonthLabel">Current Month</th>
+              <th colspan="4" class="text-purple-400" id="nextMonthLabel">Next Month</th>
+            </tr>
+            <tr class="text-sm bg-gray-900">
+              <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
+              <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleBody">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="backdrop" class="fixed inset-0 bg-black/60 z-40 hidden backdrop-blur-sm" onclick="closeSidebar()"></div>
+
+  <div id="sidebar" class="slide-over fixed top-0 right-0 h-full w-96 bg-[#0f172a] border-l border-gray-700 z-50 shadow-2xl flex flex-col">
+    <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-[#1e293b]">
+      <div>
+        <h2 id="sideCompanyName" class="text-xl font-bold text-white">Company Name</h2>
+        <p class="text-sm text-gray-400 mt-1">Detailed Action Plan</p>
+      </div>
+      <button onclick="closeSidebar()" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1" id="sideTimeline"></div>
+    <div class="p-6 border-t border-gray-700 bg-[#1e293b]">
+      <a href="Dailylog.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition shadow-lg">
+        ไปที่หน้าบันทึก DailyLog
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+    let companySchedules = [];
+
+    async function loadDataAndRender() {
+      // 1. คำนวณเดือนปัจจุบันและเดือนถัดไป (สำหรับเทียบค่า M1-M12)
+      const d = new Date();
+      const currentMonthNum = d.getMonth() + 1; 
+      const nextMonthNum = (currentMonthNum % 12) + 1;
+      
+      const currentMStr = "M" + currentMonthNum;
+      const nextMStr = "M" + nextMonthNum;
+
+      // เซ็ตหัวตาราง
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      document.getElementById('currentMonthLabel').innerText = `Current Month (${monthNames[currentMonthNum-1]})`;
+      document.getElementById('nextMonthLabel').innerText = `Next Month (${monthNames[nextMonthNum-1]})`;
+
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getAllSchedules");
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          // 2. แปลงข้อมูล JSON ก้อนใหญ่ ให้กลายเป็นรูปแบบที่ตารางต้องการ
+          companySchedules = result.data.map(row => {
+            let tasks = [];
+            const sched = row.data;
+            
+            // แมพ Base Tasks
+            (sched.baseTasks || []).forEach(t => {
+              if(t.month === currentMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "current", week: t.week, type: "badge-base" });
+              if(t.month === nextMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "next", week: t.week, type: "badge-base" });
+            });
+
+            // แมพ Batches (Content, Publish, Improve)
+            (sched.batches || []).forEach((b, i) => {
+              let bName = b.title ? b.title.replace('📦 ', '') : `Content Batch #${i+1}`;
+              let bType = (i % 2 === 0) ? "badge-b1" : "badge-b2"; // สลับสีฟ้า-ม่วง
+              
+              (b.tasks || []).forEach(t => {
+                if(t.month === currentMStr) tasks.push({ phase: bName, name: t.name, month: "current", week: t.week, type: bType });
+                if(t.month === nextMStr) tasks.push({ phase: bName, name: t.name, month: "next", week: t.week, type: bType });
+              });
+              
+              if(b.publish && b.publish.month) {
+                if(b.publish.month === currentMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "current", week: b.publish.week, type: bType });
+                if(b.publish.month === nextMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "next", week: b.publish.week, type: bType });
+              }
+
+              if(b.improve) {
+                b.improve.forEach(imp => {
+                  if(imp.month === currentMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "current", week: imp.week, type: "badge-improve" });
+                  if(imp.month === nextMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "next", week: imp.week, type: "badge-improve" });
+                });
+              }
+            });
+
+            return { id: row.company, name: row.company, tasks: tasks };
+          });
+
+          // 3. กรองเอาเฉพาะบริษัทที่มีงานใน 2 เดือนนี้ (จะได้ไม่รก)
+          companySchedules = companySchedules.filter(c => c.tasks.length > 0);
+
+          // ซ่อนโหลดดิ้งและเรนเดอร์ตาราง
+          document.getElementById('loadingData').style.display = 'none';
+          document.getElementById('tableContainer').style.display = 'block';
+          
+          if(companySchedules.length === 0) {
+            document.getElementById('scheduleBody').innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-500">🎉 ไม่มีแผนงานที่ต้องทำในเดือนนี้และเดือนหน้า</td></tr>`;
+          } else {
+            renderTable();
+          }
+        }
+      } catch(e) {
+        document.getElementById('loadingData').innerHTML = `<p class="text-red-500">❌ เกิดข้อผิดพลาดในการดึงข้อมูล กรุณารีเฟรชหน้าจอ</p>`;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('scheduleBody');
+      tbody.innerHTML = '';
+      const weeks = ['W1', 'W2', 'W3', 'W4'];
+      const months = ['current', 'next'];
+
+      companySchedules.forEach(company => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="company-cell pl-4" onclick="openSidebar('${company.id}')">🏢 ${company.name}</td>`;
+
+        months.forEach(month => {
+          weeks.forEach(week => {
+            const td = document.createElement('td');
+            const tasksInCell = company.tasks.filter(t => t.month === month && t.week === week);
+            
+            tasksInCell.forEach(task => {
+              const badge = document.createElement('div');
+              badge.className = `task-badge ${task.type}`;
+              badge.innerText = task.phase;
+              badge.title = task.name;
+              badge.onclick = (e) => { e.stopPropagation(); openSidebar(company.id); };
+              td.appendChild(badge);
+            });
+            tr.appendChild(td);
+          });
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('backdrop');
+
+    function openSidebar(companyId) {
+      const company = companySchedules.find(c => c.id === companyId);
+      if (!company) return;
+
+      document.getElementById('sideCompanyName').innerText = company.name;
+      const timelineContainer = document.getElementById('sideTimeline');
+      timelineContainer.innerHTML = '';
+
+      company.tasks.forEach(task => {
+        let dotColor = "bg-gray-500";
+        if(task.type.includes('base')) dotColor = "bg-green-500";
+        if(task.type.includes('b1')) dotColor = "bg-blue-500";
+        if(task.type.includes('b2')) dotColor = "bg-purple-500";
+        if(task.type.includes('improve')) dotColor = "bg-orange-500";
+
+        const timing = task.month === 'current' ? `เดือนนี้ - ${task.week}` : `เดือนหน้า - ${task.week}`;
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = `
+          <div class="timeline-dot ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.3)]"></div>
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">${timing}</span>
+          <h4 class="text-md font-bold text-white mt-1">${task.phase}</h4>
+          <p class="text-sm text-gray-400">📝 ${task.name}</p>
+        `;
+        timelineContainer.appendChild(item);
+      });
+
+      sidebar.classList.add('open');
+      backdrop.classList.remove('hidden');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.add('hidden');
+    }
+
+    window.onload = loadDataAndRender;
+  </script>
+</body>
+</html>

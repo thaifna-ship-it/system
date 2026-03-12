@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 1: New Customer Entry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+        <div class="mb-6 border-b pb-4">
+            <h2 class="text-2xl font-bold text-gray-800">📦 Module: New Customer</h2>
+            <p class="text-gray-500 text-sm">กรอกข้อมูลลูกค้าใหม่เพื่อเริ่มการวางแผน Schedule</p>
+        </div>
+
+        <form id="newCustomerForm" class="space-y-4">
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700">Company Name</label>
+                <input type="text" id="companyName" placeholder="ชื่อบริษัทลูกค้า" required
+                    class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700">Contract Start Month</label>
+                <input type="month" id="contractStart" required
+                    class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Emidas Link</label>
+                    <input type="url" id="emidasLink" placeholder="https://..." 
+                        class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">NotebookLM Link</label>
+                    <input type="url" id="notebookLink" placeholder="https://..." 
+                        class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+
+            <hr class="my-6">
+
+            <div class="bg-blue-50 p-4 rounded-lg space-y-4">
+                <h3 class="font-bold text-blue-800 text-sm uppercase tracking-wider">Responsibility Team</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">CS - TH PIC</label>
+                        <input type="text" id="csThPic" placeholder="ชื่อผู้รับผิดชอบ (ไทย)" 
+                            class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">CS - JP PIC</label>
+                        <input type="text" id="csJpPic" placeholder="ชื่อผู้รับผิดชอบ (ญี่ปุ่น)" 
+                            class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Sales PIC</label>
+                    <input type="text" id="salesPic" placeholder="ชื่อเซลล์เจ้าของโปรเจกต์" required
+                        class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">ล้างข้อมูล</button>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold shadow-lg transition">บันทึกข้อมูลลูกค้า</button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        // URL ของ Google Apps Script ที่คุณสร้างไว้
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+
+        document.getElementById('newCustomerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // เปลี่ยนสถานะปุ่มเพื่อป้องกันการกดซ้ำ
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "กำลังบันทึกข้อมูล...";
+            submitBtn.disabled = true;
+            submitBtn.classList.add("opacity-75", "cursor-not-allowed");
+            
+            // รวบรวมข้อมูลจากฟอร์ม
+            const formData = {
+                salesPic: document.getElementById('salesPic').value,
+                csThPic: document.getElementById('csThPic').value,
+                csJpPic: document.getElementById('csJpPic').value,
+                emidasLink: document.getElementById('emidasLink').value,
+                notebookLink: document.getElementById('notebookLink').value,
+                companyName: document.getElementById('companyName').value,
+                contractStart: document.getElementById('contractStart').value
+            };
+
+            try {
+                // ส่งข้อมูลไปยัง Google Apps Script
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // ใช้ text/plain ป้องกันปัญหา CORS
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if(result.status === 'success') {
+                    alert("✅ บันทึกข้อมูลลูกค้า " + formData.companyName + " ลง Google Sheet สำเร็จ!");
+                    document.getElementById('newCustomerForm').reset(); // ล้างข้อมูลในฟอร์ม
+                } else {
+                    alert("❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result.message);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการตั้งค่าสิทธิ์ (Permissions) ของ Web App ว่าเป็น 'Anyone' หรือยัง");
+            } finally {
+                // คืนค่าปุ่มกลับเป็นเหมือนเดิม
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("opacity-75", "cursor-not-allowed");
+            }
+        });
+    </script>
+</body>
+</html>
