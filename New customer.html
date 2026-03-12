@@ -90,6 +90,7 @@
             
             // รวบรวมข้อมูลจากฟอร์ม
             const formData = {
+                action: "addCustomer", // <--- เพิ่มบรรทัดนี้เข้าไปครับ
                 salesPic: document.getElementById('salesPic').value,
                 csThPic: document.getElementById('csThPic').value,
                 csJpPic: document.getElementById('csJpPic').value,
@@ -129,4 +130,5 @@
         });
     </script>
 </body>
+
 </html>
