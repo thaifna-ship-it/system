@@ -49,7 +49,6 @@
     }
     .filter-select:focus { border-color: var(--acc-blue); }
 
-    /* ปุ่มเปลี่ยนเดือน */
     .nav-btn {
       background-color: #1e293b; border: 1px solid #334155; color: #94a3b8;
       padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
@@ -64,7 +63,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div>
         <h1 class="text-3xl font-extrabold text-white">📅 Overview Schedule</h1>
-        <p class="text-gray-400 mt-2">แผนงานภาพรวม (ดึงข้อมูล Real-time จากระบบ)</p>
+        <p class="text-gray-400 mt-2">แผนงานภาพรวม (รองรับการข้ามปีปฏิทิน)</p>
       </div>
       <div class="flex flex-wrap gap-4 text-sm bg-[#111827] p-3 rounded-lg border border-gray-800">
         <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div> Base Setup</span>
@@ -88,7 +87,6 @@
       </div>
       
       <div id="mainContent" style="display: none;">
-        
         <div class="flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
           <button onclick="changeMonth(-1)" class="nav-btn">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -146,12 +144,13 @@
     // ⚠️ นำ URL ของ Web App คุณมาใส่ที่นี่
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
     
-    let rawData = []; // เก็บก้อนข้อมูลดิบจาก API ทั้งหมด
-    let allSchedules = []; // ข้อมูลที่แปลงเข้ากับเดือนปัจจุบัน
-    let filteredSchedules = []; // ข้อมูลที่ผ่านการกรองแล้ว
+    let rawData = [];
+    let allSchedules = [];
+    let filteredSchedules = [];
     
-    // ตัวแปรเก็บเดือนที่กำลังแสดง (1-12) เริ่มต้นที่เดือนปัจจุบัน
+    // สถานะเดือนและปีที่กำลังแสดง
     let displayMonthNum = new Date().getMonth() + 1; 
+    let displayYearNum = new Date().getFullYear();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     async function loadDataAndRender() {
@@ -160,10 +159,9 @@
         const result = await response.json();
         
         if (result.status === 'success') {
-          rawData = result.data; // เก็บ Cache ไว้
-          setupFiltersFromRaw(); // สร้างตัวเลือก Dropdown (Sales/CS) จากข้อมูลทั้งหมด
-          
-          processAndRender(displayMonthNum); // เริ่มประมวลผลตาราง
+          rawData = result.data; 
+          setupFiltersFromRaw(); 
+          processAndRender(displayMonthNum, displayYearNum); 
 
           document.getElementById('loadingData').style.display = 'none';
           document.getElementById('mainContent').style.display = 'block';
@@ -174,34 +172,53 @@
       }
     }
 
-    // ฟังก์ชันเปลี่ยนเดือนจากปุ่มกด (-1 หรือ +1)
+    // ฟังก์ชันเปลี่ยนเดือน โดยมีการทดปี
     function changeMonth(step) {
       displayMonthNum += step;
-      if(displayMonthNum < 1) displayMonthNum = 12; // วนกลับไปธันวาคม
-      if(displayMonthNum > 12) displayMonthNum = 1; // วนกลับไปมกราคม
-      
-      processAndRender(displayMonthNum);
+      if(displayMonthNum > 12) {
+          displayMonthNum = 1;
+          displayYearNum++;
+      } else if (displayMonthNum < 1) {
+          displayMonthNum = 12;
+          displayYearNum--;
+      }
+      processAndRender(displayMonthNum, displayYearNum);
     }
 
-    // ฟังก์ชันประมวลผลข้อมูลใหม่ตามเดือนที่เลือก
-    function processAndRender(startMonth) {
-      const nextMonthNum = (startMonth % 12) + 1;
+    // ฟังก์ชันดึงข้อมูลมาเทียบเดือนและ "ปี"
+    function processAndRender(startMonth, startYear) {
+      let nextMonthNum = startMonth + 1;
+      let nextYear = startYear;
+      if (nextMonthNum > 12) {
+          nextMonthNum = 1;
+          nextYear++;
+      }
+
       const currentMStr = "M" + startMonth;
       const nextMStr = "M" + nextMonthNum;
 
-      // อัปเดต UI หัวตาราง
-      document.getElementById('currentMonthLabel').innerText = monthNames[startMonth-1];
-      document.getElementById('nextMonthLabel').innerText = monthNames[nextMonthNum-1];
-      document.getElementById('monthRangeDisplay').innerText = `${monthNames[startMonth-1]} & ${monthNames[nextMonthNum-1]}`;
+      // อัปเดตข้อความบน UI ให้เห็นปีชัดเจน
+      document.getElementById('currentMonthLabel').innerText = `${monthNames[startMonth-1]} ${startYear}`;
+      document.getElementById('nextMonthLabel').innerText = `${monthNames[nextMonthNum-1]} ${nextYear}`;
+      document.getElementById('monthRangeDisplay').innerText = `${monthNames[startMonth-1]} ${startYear} - ${monthNames[nextMonthNum-1]} ${nextYear}`;
 
-      // แปลงข้อมูล Raw Data เข้ากับ 2 เดือนที่กำหนด
       allSchedules = rawData.map(row => {
         let tasks = [];
         const sched = row.data;
         
+        // ฟังก์ชันช่วยเช็คว่าตรงกับ เดือนและปี ที่แสดงผลอยู่หรือไม่
+        const checkTiming = (tMonth, tYear, tWeek, pName, tName, bType) => {
+            let ty = String(tYear);
+            if (tMonth === currentMStr && ty === String(startYear)) {
+                tasks.push({ phase: pName, name: tName, month: "current", week: tWeek, type: bType });
+            }
+            if (tMonth === nextMStr && ty === String(nextYear)) {
+                tasks.push({ phase: pName, name: tName, month: "next", week: tWeek, type: bType });
+            }
+        };
+
         (sched.baseTasks || []).forEach(t => {
-          if(t.month === currentMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "current", week: t.week, type: "badge-base" });
-          if(t.month === nextMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "next", week: t.week, type: "badge-base" });
+            checkTiming(t.month, t.year, t.week, "Base Setup", t.name, "badge-base");
         });
 
         (sched.batches || []).forEach((b, i) => {
@@ -209,36 +226,29 @@
           let bType = (i % 2 === 0) ? "badge-b1" : "badge-b2";
           
           (b.tasks || []).forEach(t => {
-            if(t.month === currentMStr) tasks.push({ phase: bName, name: t.name, month: "current", week: t.week, type: bType });
-            if(t.month === nextMStr) tasks.push({ phase: bName, name: t.name, month: "next", week: t.week, type: bType });
+              checkTiming(t.month, t.year, t.week, bName, t.name, bType);
           });
           
           if(b.publish && b.publish.month) {
-            if(b.publish.month === currentMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "current", week: b.publish.week, type: bType });
-            if(b.publish.month === nextMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "next", week: b.publish.week, type: bType });
+              checkTiming(b.publish.month, b.publish.year, b.publish.week, bName, "Publish Articles", bType);
           }
 
           if(b.improve) {
             b.improve.forEach(imp => {
-              if(imp.month === currentMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "current", week: imp.week, type: "badge-improve" });
-              if(imp.month === nextMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "next", week: imp.week, type: "badge-improve" });
+                checkTiming(imp.month, imp.year, imp.week, "Improve Page", imp.name, "badge-improve");
             });
           }
         });
 
         return { 
-            id: row.company, 
-            name: row.company, 
-            salesPic: row.salesPic || "-", 
-            csThPic: row.csThPic || "-", 
+            id: row.company, name: row.company, 
+            salesPic: row.salesPic || "-", csThPic: row.csThPic || "-", 
             tasks: tasks 
         };
       });
 
-      // กรองเอาเฉพาะบริษัทที่มีงานใน 2 เดือนนี้ จะได้ไม่แสดงหน้าเปล่าๆ ให้รก
+      // กรองบริษัทที่มีงานในเดือน+ปี ที่เลือก
       allSchedules = allSchedules.filter(c => c.tasks.length > 0);
-      
-      // เมื่อหั่นข้อมูลเสร็จ ให้เรียกใช้ระบบ Filter ซ้ำ (เผื่อผู้ใช้เลือกเซลล์ค้างไว้ตอนเปลี่ยนเดือน)
       applyFilters();
     }
 
@@ -279,7 +289,7 @@
       resultCount.innerText = `แสดงข้อมูล ${filteredSchedules.length} บริษัท`;
 
       if(filteredSchedules.length === 0) {
-        tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center p-8 text-gray-500 text-lg\">🔍 ไม่มีตารางงานสำหรับ 2 เดือนนี้ (หรือเงื่อนไขที่เลือก)</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center p-8 text-gray-500 text-lg\">🔍 ไม่มีตารางงานสำหรับเดือน/ปี หรือเงื่อนไขที่เลือก</td></tr>`;
         return;
       }
 
@@ -314,9 +324,6 @@
       });
     }
 
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('backdrop');
-
     function openSidebar(companyId) {
       const company = allSchedules.find(c => c.id === companyId);
       if (!company) return;
@@ -334,7 +341,13 @@
         if(task.type.includes('b2')) dotColor = "bg-purple-500";
         if(task.type.includes('improve')) dotColor = "bg-orange-500";
 
-        const timing = task.month === 'current' ? `เดือนนี้ - ${task.week}` : `เดือนหน้า - ${task.week}`;
+        // เพิ่มการแสดงปีปฏิทินที่ Sidebar เพื่อความชัดเจน
+        let currentYearShow = displayYearNum;
+        let nextYearShow = (displayMonthNum === 12) ? displayYearNum + 1 : displayYearNum;
+        const timing = task.month === 'current' 
+            ? `เดือนนี้ - ${task.week} ${currentYearShow}` 
+            : `เดือนหน้า - ${task.week} ${nextYearShow}`;
+
         const item = document.createElement('div');
         item.className = 'timeline-item';
         item.innerHTML = `
@@ -346,13 +359,13 @@
         timelineContainer.appendChild(item);
       });
 
-      sidebar.classList.add('open');
-      backdrop.classList.remove('hidden');
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('backdrop').classList.remove('hidden');
     }
 
     function closeSidebar() {
-      sidebar.classList.remove('open');
-      backdrop.classList.add('hidden');
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('backdrop').classList.add('hidden');
     }
 
     window.onload = loadDataAndRender;
