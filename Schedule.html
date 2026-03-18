@@ -22,7 +22,7 @@
     }
     input:focus, select:focus{border-color: var(--warn)}
     
-    /* Grid แบบ 6 คอลัมน์ */
+    /* Grid แบบ 6 คอลัมน์ (รวมช่องใส่จำนวน) */
     .task-row { display:grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 12px; }
     .task-name { font-weight: 500; color: #e2e8f0; }
     .auto-text { color: var(--acc); font-weight: bold; font-size: 0.9rem; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; text-align: center;}
@@ -183,14 +183,20 @@
       }
     });
 
-    function addStandardBaseTask(name, week='', month='', year='') {
+    // -------------------------------------------------------------
+    // ฟอร์ม Base Setup
+    // -------------------------------------------------------------
+    function addStandardBaseTask(name, needsQty=false, week='', month='', year='', qty='') {
       const div = document.createElement('div');
       div.className = 'task-row base-task'; div.dataset.type = 'standard';
+      const qtyHtml = needsQty ? `<input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${qty}">` : `<div></div>`;
+      
       div.innerHTML = `<div class="task-name">• ${name}</div>
         <select class="val-week">${getWeekOptions(week)}</select>
         <select class="val-month">${getMonthOptions(month)}</select>
         <select class="val-year">${getYearOptions(year)}</select>
-        <div></div><button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
+        ${qtyHtml}
+        <button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
       document.getElementById('baseTasks').appendChild(div);
     }
 
@@ -201,16 +207,21 @@
         <select class="val-week">${getWeekOptions(week)}</select>
         <select class="val-month">${getMonthOptions(month)}</select>
         <select class="val-year">${getYearOptions(year)}</select>
-        <div></div><button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
+        <div></div>
+        <button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
       document.getElementById('baseTasks').appendChild(div);
     }
 
     function renderDefaultBaseTasks() {
-      ["Kick-off JP", "Kick-off TH", "Document received", "Create Basic page"].forEach(t => addStandardBaseTask(t));
+      addStandardBaseTask("Kick-off JP");
+      addStandardBaseTask("Kick-off TH");
+      addStandardBaseTask("Document received");
+      addStandardBaseTask("Create Basic page");
+      addStandardBaseTask("Title Planning", true); // เพิ่ม Title Planning และเปิดช่องใส่จำนวน
     }
 
     // -------------------------------------------------------------
-    // ฟอร์ม Batch (เพิ่มปุ่ม + Process และ ลบ)
+    // ฟอร์ม Batch (อัปเดต Default List)
     // -------------------------------------------------------------
     let batchCount = 0;
     function addBatch(data = null) {
@@ -220,20 +231,22 @@
       const d = data || { tasks: [], publish: {} };
 
       let tasksHtml = '';
-      if (!data) {
-          // โหลดค่าเริ่มต้นถ้ากดสร้าง Batch ใหม่
-          tasksHtml += generateBatchTask('Writing & finalizing article titles', true, {}, false);
+      if (!data || !data.tasks || data.tasks.length === 0) {
+          // ค่าเริ่มต้นสำหรับ Batch ใหม่
+          tasksHtml += generateBatchTask('Title Create', true, {}, false);
           tasksHtml += generateBatchTask('Title review', false, {}, false);
-          tasksHtml += generateBatchTask('Customer confirmation', false, {}, false);
-          tasksHtml += generateBatchTask('Writing articles', true, {}, false);
-          tasksHtml += generateBatchTask('Content review', false, {}, false);
+          tasksHtml += generateBatchTask('Article Create', true, {}, false);
+          tasksHtml += generateBatchTask('Article Review', false, {}, false);
       } else {
-          // โหลดจากข้อมูลที่มีการเซฟไว้ (แยกแยะว่าอันไหน Default หรือ Custom)
-          const defaultNames = ['Writing & finalizing article titles', 'Title review', 'Customer confirmation', 'Writing articles', 'Content review'];
+          // โหลดจากข้อมูลที่มีการเซฟไว้
+          const defaultNames = ['Title Create', 'Title review', 'Article Create', 'Article Review'];
           d.tasks.forEach(t => {
               const isCustom = !defaultNames.includes(t.name);
-              // ส่ง needsNumber = true ไปเสมอเพื่อให้ช่องจำนวนโชว์ขึ้นมา (เผื่อผู้ใช้ต้องการกรอก)
-              tasksHtml += generateBatchTask(t.name, true, t, isCustom);
+              let needsNumber = true; 
+              if (!isCustom) {
+                  needsNumber = (t.name === 'Title Create' || t.name === 'Article Create');
+              }
+              tasksHtml += generateBatchTask(t.name, needsNumber, t, isCustom);
           });
       }
 
@@ -278,7 +291,6 @@
       }
     }
 
-    // ฟังก์ชันสร้างแถวงานใน Batch (รองรับทั้ง Default และ Custom)
     function generateBatchTask(taskName, needsNumber, savedData, isCustom = false) {
       const numInput = needsNumber ? `<input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}">` : `<div></div>`;
       
@@ -296,17 +308,17 @@
       </div>`;
     }
 
-    // ฟังก์ชันแทรกแถวใหม่เมื่อกดปุ่ม "+ เพิ่ม Process" ใน Batch
     function addCustomBatchTask(batchId) {
         const list = document.getElementById(`task_list_${batchId}`);
         if(!list) return;
-        const html = generateBatchTask('', true, {}, true); // ค่าว่าง, ให้โชว์ช่องจำนวน, เป็น custom
+        const html = generateBatchTask('', true, {}, true);
         list.insertAdjacentHTML('beforeend', html);
     }
 
+    // Publish Article (ไม่มีปุ่มลบ)
     function generateBatchPublish(batchId, savedData) {
       return `<div class="task-row publish-task" style="background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
-        <div class="task-name-text" style="color:var(--blue)">- Publish articles</div>
+        <div class="task-name-text" style="color:var(--blue)">- Publish Article</div>
         <select class="val-week" onchange="calculateImprove('${batchId}')">${getWeekOptions(savedData.week||'')}</select>
         <select class="val-month" onchange="calculateImprove('${batchId}')">${getMonthOptions(savedData.month||'')}</select>
         <select class="val-year" onchange="calculateImprove('${batchId}')">${getYearOptions(savedData.year||'')}</select>
@@ -315,6 +327,9 @@
       </div>`;
     }
 
+    // -------------------------------------------------------------
+    // คำนวณ Improve Page
+    // -------------------------------------------------------------
     function calculateImprove(batchId) {
       const card = document.getElementById(batchId);
       if(!card) return;
@@ -358,8 +373,12 @@
     function buildFormFromData(data) {
       document.getElementById('contractStart').value = data.contractStart || '';
       (data.baseTasks || []).forEach(task => {
-        if (task.type === 'custom') addCustomBaseTask(task.name, task.week, task.month, task.year);
-        else addStandardBaseTask(task.name, task.week, task.month, task.year);
+        if (task.type === 'custom') {
+            addCustomBaseTask(task.name, task.week, task.month, task.year);
+        } else {
+            const needsQty = (task.name === 'Title Planning');
+            addStandardBaseTask(task.name, needsQty, task.week, task.month, task.year, task.qty);
+        }
       });
       (data.batches || []).forEach(batchData => addBatch(batchData));
     }
@@ -378,7 +397,8 @@
             type: type, name: name, 
             week: row.querySelector('.val-week').value, 
             month: row.querySelector('.val-month').value,
-            year: row.querySelector('.val-year').value
+            year: row.querySelector('.val-year').value,
+            qty: row.querySelector('.val-qty') ? row.querySelector('.val-qty').value : ''
         });
       });
 
@@ -386,7 +406,6 @@
         const batch = { title: card.querySelector('.batch-title').innerText, tasks: [], publish: {}, improve: [] };
         
         card.querySelectorAll('.normal-task').forEach(row => {
-          // ตรวจสอบว่าเป็น Custom หรือ Default เพื่อดึงชื่อให้ถูกต้อง
           const isCustom = row.dataset.iscustom === 'true';
           const name = isCustom ? row.querySelector('.custom-batch-name').value : row.querySelector('.task-name-text').innerText.replace('- ', '');
           
@@ -401,7 +420,7 @@
 
         const pubRow = card.querySelector('.publish-task');
         batch.publish = { 
-            name: 'Publish articles', 
+            name: 'Publish Article', 
             week: pubRow.querySelector('.val-week').value, 
             month: pubRow.querySelector('.val-month').value,
             year: pubRow.querySelector('.val-year').value,
@@ -453,6 +472,9 @@
       }
     }
 
+    // ----------------------------------------------------------------------------------
+    // ฟังก์ชันสร้าง PDF
+    // ----------------------------------------------------------------------------------
     function exportGanttPDF() {
       const company = document.getElementById('companySelect').value;
       if (!company) return alert("กรุณาเลือกบริษัทก่อน Export PDF");
