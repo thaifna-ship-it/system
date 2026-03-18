@@ -22,7 +22,7 @@
     }
     input:focus, select:focus{border-color: var(--warn)}
     
-    /* อัปเดต Layout เพิ่มคอลัมน์สำหรับ "ปี" */
+    /* Grid แบบ 6 คอลัมน์ */
     .task-row { display:grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 12px; }
     .task-name { font-weight: 500; color: #e2e8f0; }
     .auto-text { color: var(--acc); font-weight: bold; font-size: 0.9rem; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; text-align: center;}
@@ -51,7 +51,7 @@
   <div class="wrap">
     <div class="card">
       <h1>📅 Schedule Planning</h1>
-      <p class="desc">วางแผนตารางงานรายปีสำหรับลูกค้า (รองรับการข้ามปีปฏิทิน)</p>
+      <p class="desc">วางแผนตารางงานรายปีสำหรับลูกค้า (รองรับการข้ามปีปฏิทิน และปรับแต่ง Process ได้อิสระ)</p>
 
       <div class="top-section">
         <div style="grid-column: span 2;">
@@ -102,7 +102,6 @@
     // ⚠️ นำ URL ของ Web App คุณมาใส่ที่นี่
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
     
-    // ฟังก์ชันสร้างตัวเลือก ปี (ย้อนหลัง 1 ปี ถึง อนาคต 5 ปี)
     const currentYear = new Date().getFullYear();
     const getYearOptions = (val) => {
       let opts = `<option value="">Year</option>`;
@@ -184,9 +183,6 @@
       }
     });
 
-    // -------------------------------------------------------------
-    // ฟอร์ม Generator (อัปเดตเพิ่มช่อง ปี)
-    // -------------------------------------------------------------
     function addStandardBaseTask(name, week='', month='', year='') {
       const div = document.createElement('div');
       div.className = 'task-row base-task'; div.dataset.type = 'standard';
@@ -213,48 +209,68 @@
       ["Kick-off JP", "Kick-off TH", "Document received", "Create Basic page"].forEach(t => addStandardBaseTask(t));
     }
 
+    // -------------------------------------------------------------
+    // ฟอร์ม Batch (เพิ่มปุ่ม + Process และ ลบ)
+    // -------------------------------------------------------------
     let batchCount = 0;
     function addBatch(data = null) {
       batchCount++;
       const batchId = `batch_${batchCount}`;
       const container = document.getElementById('batchContainer');
       const d = data || { tasks: [], publish: {} };
-      const getTask = (name) => d.tasks.find(t => t.name === name) || {};
+
+      let tasksHtml = '';
+      if (!data) {
+          // โหลดค่าเริ่มต้นถ้ากดสร้าง Batch ใหม่
+          tasksHtml += generateBatchTask('Writing & finalizing article titles', true, {}, false);
+          tasksHtml += generateBatchTask('Title review', false, {}, false);
+          tasksHtml += generateBatchTask('Customer confirmation', false, {}, false);
+          tasksHtml += generateBatchTask('Writing articles', true, {}, false);
+          tasksHtml += generateBatchTask('Content review', false, {}, false);
+      } else {
+          // โหลดจากข้อมูลที่มีการเซฟไว้ (แยกแยะว่าอันไหน Default หรือ Custom)
+          const defaultNames = ['Writing & finalizing article titles', 'Title review', 'Customer confirmation', 'Writing articles', 'Content review'];
+          d.tasks.forEach(t => {
+              const isCustom = !defaultNames.includes(t.name);
+              // ส่ง needsNumber = true ไปเสมอเพื่อให้ช่องจำนวนโชว์ขึ้นมา (เผื่อผู้ใช้ต้องการกรอก)
+              tasksHtml += generateBatchTask(t.name, true, t, isCustom);
+          });
+      }
 
       const batchHtml = `
         <div class="batch-card" id="${batchId}">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div class="batch-title">📦 Content Batch #${batchCount}</div>
-            <button type="button" class="remove-btn" onclick="document.getElementById('${batchId}').remove()">ลบ Batch นี้</button>
+            <div>
+              <button type="button" class="btn" style="background:var(--acc); color:#fff; padding:6px 12px; font-size:0.8rem; margin-right:10px; width:auto;" onclick="addCustomBatchTask('${batchId}')">+ เพิ่ม Process</button>
+              <button type="button" class="remove-btn" onclick="document.getElementById('${batchId}').remove()">ลบ Batch</button>
+            </div>
           </div>
-          <div class="batch-task-list">
-            ${generateBatchTask('Writing & finalizing article titles', true, getTask('Writing & finalizing article titles'))}
-            ${generateBatchTask('Title review', false, getTask('Title review'))}
-            ${generateBatchTask('Customer confirmation', false, getTask('Customer confirmation'))}
-            ${generateBatchTask('Writing articles', true, getTask('Writing articles'))}
-            ${generateBatchTask('Content review', false, getTask('Content review'))}
+          
+          <div class="batch-task-list" id="task_list_${batchId}">
+            ${tasksHtml}
           </div>
+          
           ${generateBatchPublish(batchId, d.publish)}
+          
           <div class="task-row" style="margin-top:20px; border-top: 1px dashed var(--border); padding-top: 15px;">
             <div class="task-name" style="color:var(--warn)">✨ Improve page & Public (Auto)</div>
             <div class="auto-text p1">Phase 1: -</div>
             <div class="auto-text p2">Phase 2: -</div>
             <div class="auto-text p3">Phase 3: -</div>
+            <div></div><div></div>
           </div>
         </div>
       `;
       container.insertAdjacentHTML('beforeend', batchHtml);
       
-      // ถ้ามีข้อมูลเก่าอยู่แล้ว ให้เซ็ตค่า data attribute กลับไปด้วยเพื่อให้เก็บข้อมูลตอน Save ได้ถูกต้อง
       if(d.improve && d.improve.length > 0) {
         const card = document.getElementById(batchId);
         ['p1', 'p2', 'p3'].forEach((pClass, idx) => {
             if(d.improve[idx]) {
                 const el = card.querySelector('.' + pClass);
                 el.innerText = `Phase ${idx+1}: ${d.improve[idx].week}-${d.improve[idx].month} ${d.improve[idx].year}`;
-                el.dataset.week = d.improve[idx].week;
-                el.dataset.month = d.improve[idx].month;
-                el.dataset.year = d.improve[idx].year;
+                el.dataset.week = d.improve[idx].week; el.dataset.month = d.improve[idx].month; el.dataset.year = d.improve[idx].year;
             }
         });
       } else {
@@ -262,13 +278,30 @@
       }
     }
 
-    function generateBatchTask(taskName, needsNumber, savedData) {
+    // ฟังก์ชันสร้างแถวงานใน Batch (รองรับทั้ง Default และ Custom)
+    function generateBatchTask(taskName, needsNumber, savedData, isCustom = false) {
       const numInput = needsNumber ? `<input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}">` : `<div></div>`;
-      return `<div class="task-row normal-task"><div class="task-name-text">- ${taskName}</div>
+      
+      let nameHtml = isCustom 
+         ? `<input type="text" class="custom-batch-name" placeholder="พิมพ์ชื่อ Process..." value="${taskName}">` 
+         : `<div class="task-name-text">- ${taskName}</div>`;
+
+      return `<div class="task-row normal-task" data-iscustom="${isCustom}">
+        ${nameHtml}
         <select class="val-week">${getWeekOptions(savedData.week||'')}</select>
         <select class="val-month">${getMonthOptions(savedData.month||'')}</select>
         <select class="val-year">${getYearOptions(savedData.year||'')}</select>
-        ${numInput}</div>`;
+        ${numInput}
+        <button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>
+      </div>`;
+    }
+
+    // ฟังก์ชันแทรกแถวใหม่เมื่อกดปุ่ม "+ เพิ่ม Process" ใน Batch
+    function addCustomBatchTask(batchId) {
+        const list = document.getElementById(`task_list_${batchId}`);
+        if(!list) return;
+        const html = generateBatchTask('', true, {}, true); // ค่าว่าง, ให้โชว์ช่องจำนวน, เป็น custom
+        list.insertAdjacentHTML('beforeend', html);
     }
 
     function generateBatchPublish(batchId, savedData) {
@@ -277,12 +310,11 @@
         <select class="val-week" onchange="calculateImprove('${batchId}')">${getWeekOptions(savedData.week||'')}</select>
         <select class="val-month" onchange="calculateImprove('${batchId}')">${getMonthOptions(savedData.month||'')}</select>
         <select class="val-year" onchange="calculateImprove('${batchId}')">${getYearOptions(savedData.year||'')}</select>
-        <input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}"></div>`;
+        <input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${savedData.qty||''}">
+        <div></div>
+      </div>`;
     }
 
-    // -------------------------------------------------------------
-    // คำนวณ Improve Page แบบทดปี (Year Wrap-around)
-    // -------------------------------------------------------------
     function calculateImprove(batchId) {
       const card = document.getElementById(batchId);
       if(!card) return;
@@ -302,14 +334,10 @@
       let mNum = parseInt(monthStr.replace('M', ''));
       let yNum = parseInt(yearStr);
 
-      // ฟังก์ชันบวกเดือน และถ้าเกินเดือน 12 ให้ทดปี +1
       const getNextDate = (baseM, baseY, addMonths) => { 
         let newM = baseM + addMonths;
         let newY = baseY;
-        while(newM > 12) { 
-            newM -= 12; 
-            newY++; 
-        }
+        while(newM > 12) { newM -= 12; newY++; }
         return { m: 'M' + newM, y: newY }; 
       };
 
@@ -317,7 +345,6 @@
       const d2 = getNextDate(mNum, yNum, 4);
       const d3 = getNextDate(mNum, yNum, 6);
 
-      // แสดงผลบนหน้าจอ และซ่อนข้อมูลไว้ใน Data Attribute เพื่อให้เซฟง่ายๆ
       p1.innerText = `Phase 1: ${weekVal}-${d1.m} ${d1.y}`;
       p1.dataset.week = weekVal; p1.dataset.month = d1.m; p1.dataset.year = d1.y;
 
@@ -348,8 +375,7 @@
         const type = row.dataset.type;
         const name = type === 'custom' ? row.querySelector('.custom-name').value : row.querySelector('.task-name').innerText.replace('• ', '');
         scheduleData.baseTasks.push({ 
-            type: type, 
-            name: name, 
+            type: type, name: name, 
             week: row.querySelector('.val-week').value, 
             month: row.querySelector('.val-month').value,
             year: row.querySelector('.val-year').value
@@ -360,8 +386,12 @@
         const batch = { title: card.querySelector('.batch-title').innerText, tasks: [], publish: {}, improve: [] };
         
         card.querySelectorAll('.normal-task').forEach(row => {
+          // ตรวจสอบว่าเป็น Custom หรือ Default เพื่อดึงชื่อให้ถูกต้อง
+          const isCustom = row.dataset.iscustom === 'true';
+          const name = isCustom ? row.querySelector('.custom-batch-name').value : row.querySelector('.task-name-text').innerText.replace('- ', '');
+          
           batch.tasks.push({ 
-              name: row.querySelector('.task-name-text').innerText.replace('- ', ''), 
+              name: name, 
               week: row.querySelector('.val-week').value, 
               month: row.querySelector('.val-month').value,
               year: row.querySelector('.val-year').value,
@@ -378,10 +408,7 @@
             qty: pubRow.querySelector('.val-qty').value 
         };
         
-        // ดึงค่า Auto Improve จาก Data Attribute
-        const p1 = card.querySelector('.p1');
-        const p2 = card.querySelector('.p2');
-        const p3 = card.querySelector('.p3');
+        const p1 = card.querySelector('.p1'), p2 = card.querySelector('.p2'), p3 = card.querySelector('.p3');
         if(p1.dataset.week) batch.improve.push({ name: 'Improve Phase 1', week: p1.dataset.week, month: p1.dataset.month, year: p1.dataset.year });
         if(p2.dataset.week) batch.improve.push({ name: 'Improve Phase 2', week: p2.dataset.week, month: p2.dataset.month, year: p2.dataset.year });
         if(p3.dataset.week) batch.improve.push({ name: 'Improve Phase 3', week: p3.dataset.week, month: p3.dataset.month, year: p3.dataset.year });
@@ -426,9 +453,6 @@
       }
     }
 
-    // ----------------------------------------------------------------------------------
-    // ฟังก์ชันสร้าง PDF (เพิ่ม "ปี" เข้าไปแสดงหน้าชื่องานให้ชัดเจน)
-    // ----------------------------------------------------------------------------------
     function exportGanttPDF() {
       const company = document.getElementById('companySelect').value;
       if (!company) return alert("กรุณาเลือกบริษัทก่อน Export PDF");
@@ -443,7 +467,6 @@
         <div id="pdfPrintArea" style="padding: 20px; background: #fff; color: #000; width: 1080px; font-family: sans-serif;">
           <h2 style="text-align: center; color: #1e293b; margin-bottom: 5px;">Project Schedule (Gantt Chart)</h2>
           <h3 style="text-align: center; color: #475569; margin-top: 0; margin-bottom: 20px;">Company: ${company} | Start: ${data.contractStart || 'N/A'}</h3>
-          
           <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center;">
             <thead>
               <tr><th rowspan="2" style="border: 1px solid #cbd5e1; padding: 8px; width: 20%; background: #f1f5f9;">Task Name</th>`;
@@ -478,8 +501,7 @@
       });
 
       html += `</tbody></table></div>`;
-      exportArea.innerHTML = html;
-      exportArea.style.display = 'block';
+      exportArea.innerHTML = html; exportArea.style.display = 'block';
 
       const opt = {
         margin:       0.2, filename: `Schedule_${company}.pdf`,
