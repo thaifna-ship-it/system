@@ -42,13 +42,20 @@
     .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--acc-blue); animation: spin 1s linear infinite; margin-bottom: 15px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* สไตล์สำหรับ Dropdown ตัวกรอง */
     .filter-select {
       background-color: #1e293b; color: #e2e8f0; border: 1px solid #334155; 
       padding: 8px 12px; border-radius: 8px; outline: none; font-size: 0.9rem;
       min-width: 180px; transition: border-color 0.2s;
     }
     .filter-select:focus { border-color: var(--acc-blue); }
+
+    /* ปุ่มเปลี่ยนเดือน */
+    .nav-btn {
+      background-color: #1e293b; border: 1px solid #334155; color: #94a3b8;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; gap: 8px; font-weight: 600;
+    }
+    .nav-btn:hover { background-color: #334155; color: #fff; border-color: var(--acc-blue); }
   </style>
 </head>
 <body class="p-6">
@@ -69,19 +76,8 @@
 
     <div class="flex flex-wrap gap-4 mb-6 bg-[#111827] p-4 rounded-xl border border-gray-800 items-center" id="filterArea" style="display: none;">
       <span class="text-gray-400 font-semibold text-sm">🔍 กรองข้อมูล:</span>
-      
-      <div>
-        <select id="filterSales" class="filter-select" onchange="applyFilters()">
-          <option value="ALL">-- Sales PIC ทั้งหมด --</option>
-        </select>
-      </div>
-      
-      <div>
-        <select id="filterCS" class="filter-select" onchange="applyFilters()">
-          <option value="ALL">-- CS-TH PIC ทั้งหมด --</option>
-        </select>
-      </div>
-
+      <div><select id="filterSales" class="filter-select" onchange="applyFilters()"><option value="ALL">-- Sales PIC ทั้งหมด --</option></select></div>
+      <div><select id="filterCS" class="filter-select" onchange="applyFilters()"><option value="ALL">-- CS-TH PIC ทั้งหมด --</option></select></div>
       <div class="text-sm text-gray-500 ml-auto" id="resultCount">แสดงข้อมูล 0 บริษัท</div>
     </div>
 
@@ -91,22 +87,37 @@
         <p>กำลังซิงค์ข้อมูลตารางงานจากฐานข้อมูล...</p>
       </div>
       
-      <div class="overflow-x-auto" id="tableContainer" style="display: none;">
-        <table id="scheduleTable">
-          <thead>
-            <tr>
-              <th rowspan="2" class="w-48 text-left pl-4">รายชื่อบริษัท<br><span class="text-xs font-normal text-gray-400">(คลิกเพื่อดูรายละเอียด)</span></th>
-              <th colspan="4" class="text-blue-400" id="currentMonthLabel">Current Month</th>
-              <th colspan="4" class="text-purple-400" id="nextMonthLabel">Next Month</th>
-            </tr>
-            <tr class="text-sm bg-gray-900">
-              <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
-              <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
-            </tr>
-          </thead>
-          <tbody id="scheduleBody">
-            </tbody>
-        </table>
+      <div id="mainContent" style="display: none;">
+        
+        <div class="flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
+          <button onclick="changeMonth(-1)" class="nav-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            เดือนก่อนหน้า
+          </button>
+          <h2 class="text-xl font-bold text-white tracking-widest uppercase text-center" id="monthRangeDisplay">MONTH - MONTH</h2>
+          <button onclick="changeMonth(1)" class="nav-btn">
+            เดือนถัดไป
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table id="scheduleTable">
+            <thead>
+              <tr>
+                <th rowspan="2" class="w-48 text-left pl-4">รายชื่อบริษัท<br><span class="text-xs font-normal text-gray-400">(คลิกเพื่อดูรายละเอียด)</span></th>
+                <th colspan="4" class="text-blue-400" id="currentMonthLabel">Month 1</th>
+                <th colspan="4" class="text-purple-400" id="nextMonthLabel">Month 2</th>
+              </tr>
+              <tr class="text-sm bg-gray-900">
+                <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
+                <th>W1</th><th>W2</th><th>W3</th><th>W4</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody">
+              </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -135,110 +146,118 @@
     // ⚠️ นำ URL ของ Web App คุณมาใส่ที่นี่
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
     
-    let allSchedules = []; // เก็บข้อมูลบริษัททั้งหมด (Master Data)
-    let filteredSchedules = []; // เก็บข้อมูลบริษัทที่ผ่านการกรองแล้ว
+    let rawData = []; // เก็บก้อนข้อมูลดิบจาก API ทั้งหมด
+    let allSchedules = []; // ข้อมูลที่แปลงเข้ากับเดือนปัจจุบัน
+    let filteredSchedules = []; // ข้อมูลที่ผ่านการกรองแล้ว
+    
+    // ตัวแปรเก็บเดือนที่กำลังแสดง (1-12) เริ่มต้นที่เดือนปัจจุบัน
+    let displayMonthNum = new Date().getMonth() + 1; 
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     async function loadDataAndRender() {
-      const d = new Date();
-      const currentMonthNum = d.getMonth() + 1; 
-      const nextMonthNum = (currentMonthNum % 12) + 1;
-      
-      const currentMStr = "M" + currentMonthNum;
-      const nextMStr = "M" + nextMonthNum;
-
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      document.getElementById('currentMonthLabel').innerText = `Current Month (${monthNames[currentMonthNum-1]})`;
-      document.getElementById('nextMonthLabel').innerText = `Next Month (${monthNames[nextMonthNum-1]})`;
-
       try {
         const response = await fetch(SCRIPT_URL + "?action=getAllSchedules");
         const result = await response.json();
         
         if (result.status === 'success') {
-          // แปลงข้อมูลและผูกค่า Sales, CS มาด้วย
-          allSchedules = result.data.map(row => {
-            let tasks = [];
-            const sched = row.data;
-            
-            (sched.baseTasks || []).forEach(t => {
-              if(t.month === currentMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "current", week: t.week, type: "badge-base" });
-              if(t.month === nextMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "next", week: t.week, type: "badge-base" });
-            });
-
-            (sched.batches || []).forEach((b, i) => {
-              let bName = b.title ? b.title.replace('📦 ', '') : `Content Batch #${i+1}`;
-              let bType = (i % 2 === 0) ? "badge-b1" : "badge-b2";
-              
-              (b.tasks || []).forEach(t => {
-                if(t.month === currentMStr) tasks.push({ phase: bName, name: t.name, month: "current", week: t.week, type: bType });
-                if(t.month === nextMStr) tasks.push({ phase: bName, name: t.name, month: "next", week: t.week, type: bType });
-              });
-              
-              if(b.publish && b.publish.month) {
-                if(b.publish.month === currentMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "current", week: b.publish.week, type: bType });
-                if(b.publish.month === nextMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "next", week: b.publish.week, type: bType });
-              }
-
-              if(b.improve) {
-                b.improve.forEach(imp => {
-                  if(imp.month === currentMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "current", week: imp.week, type: "badge-improve" });
-                  if(imp.month === nextMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "next", week: imp.week, type: "badge-improve" });
-                });
-              }
-            });
-
-            return { 
-                id: row.company, 
-                name: row.company, 
-                salesPic: row.salesPic || "-", 
-                csThPic: row.csThPic || "-", 
-                tasks: tasks 
-            };
-          });
-
-          // กรองเอาเฉพาะบริษัทที่มีงานใน 2 เดือนนี้
-          allSchedules = allSchedules.filter(c => c.tasks.length > 0);
+          rawData = result.data; // เก็บ Cache ไว้
+          setupFiltersFromRaw(); // สร้างตัวเลือก Dropdown (Sales/CS) จากข้อมูลทั้งหมด
           
-          // เตรียม Dropdown Filter
-          setupFilters();
-
-          // เริ่มต้นให้ข้อมูลที่กรอง = ข้อมูลทั้งหมด
-          filteredSchedules = [...allSchedules];
+          processAndRender(displayMonthNum); // เริ่มประมวลผลตาราง
 
           document.getElementById('loadingData').style.display = 'none';
-          document.getElementById('tableContainer').style.display = 'block';
-          document.getElementById('filterArea').style.display = 'flex'; // แสดงแถบกรอง
-          
-          renderTable();
+          document.getElementById('mainContent').style.display = 'block';
+          document.getElementById('filterArea').style.display = 'flex';
         }
       } catch(e) {
         document.getElementById('loadingData').innerHTML = `<p class="text-red-500">❌ เกิดข้อผิดพลาดในการดึงข้อมูล กรุณารีเฟรชหน้าจอ</p>`;
       }
     }
 
-    // ฟังก์ชันสำหรับสกัดรายชื่อใส่ใน Dropdown
-    function setupFilters() {
+    // ฟังก์ชันเปลี่ยนเดือนจากปุ่มกด (-1 หรือ +1)
+    function changeMonth(step) {
+      displayMonthNum += step;
+      if(displayMonthNum < 1) displayMonthNum = 12; // วนกลับไปธันวาคม
+      if(displayMonthNum > 12) displayMonthNum = 1; // วนกลับไปมกราคม
+      
+      processAndRender(displayMonthNum);
+    }
+
+    // ฟังก์ชันประมวลผลข้อมูลใหม่ตามเดือนที่เลือก
+    function processAndRender(startMonth) {
+      const nextMonthNum = (startMonth % 12) + 1;
+      const currentMStr = "M" + startMonth;
+      const nextMStr = "M" + nextMonthNum;
+
+      // อัปเดต UI หัวตาราง
+      document.getElementById('currentMonthLabel').innerText = monthNames[startMonth-1];
+      document.getElementById('nextMonthLabel').innerText = monthNames[nextMonthNum-1];
+      document.getElementById('monthRangeDisplay').innerText = `${monthNames[startMonth-1]} & ${monthNames[nextMonthNum-1]}`;
+
+      // แปลงข้อมูล Raw Data เข้ากับ 2 เดือนที่กำหนด
+      allSchedules = rawData.map(row => {
+        let tasks = [];
+        const sched = row.data;
+        
+        (sched.baseTasks || []).forEach(t => {
+          if(t.month === currentMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "current", week: t.week, type: "badge-base" });
+          if(t.month === nextMStr) tasks.push({ phase: "Base Setup", name: t.name, month: "next", week: t.week, type: "badge-base" });
+        });
+
+        (sched.batches || []).forEach((b, i) => {
+          let bName = b.title ? b.title.replace('📦 ', '') : `Content Batch #${i+1}`;
+          let bType = (i % 2 === 0) ? "badge-b1" : "badge-b2";
+          
+          (b.tasks || []).forEach(t => {
+            if(t.month === currentMStr) tasks.push({ phase: bName, name: t.name, month: "current", week: t.week, type: bType });
+            if(t.month === nextMStr) tasks.push({ phase: bName, name: t.name, month: "next", week: t.week, type: bType });
+          });
+          
+          if(b.publish && b.publish.month) {
+            if(b.publish.month === currentMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "current", week: b.publish.week, type: bType });
+            if(b.publish.month === nextMStr) tasks.push({ phase: bName, name: "Publish Articles", month: "next", week: b.publish.week, type: bType });
+          }
+
+          if(b.improve) {
+            b.improve.forEach(imp => {
+              if(imp.month === currentMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "current", week: imp.week, type: "badge-improve" });
+              if(imp.month === nextMStr) tasks.push({ phase: "Improve Page", name: imp.name, month: "next", week: imp.week, type: "badge-improve" });
+            });
+          }
+        });
+
+        return { 
+            id: row.company, 
+            name: row.company, 
+            salesPic: row.salesPic || "-", 
+            csThPic: row.csThPic || "-", 
+            tasks: tasks 
+        };
+      });
+
+      // กรองเอาเฉพาะบริษัทที่มีงานใน 2 เดือนนี้ จะได้ไม่แสดงหน้าเปล่าๆ ให้รก
+      allSchedules = allSchedules.filter(c => c.tasks.length > 0);
+      
+      // เมื่อหั่นข้อมูลเสร็จ ให้เรียกใช้ระบบ Filter ซ้ำ (เผื่อผู้ใช้เลือกเซลล์ค้างไว้ตอนเปลี่ยนเดือน)
+      applyFilters();
+    }
+
+    function setupFiltersFromRaw() {
         const salesSet = new Set();
         const csSet = new Set();
 
-        allSchedules.forEach(comp => {
-            if(comp.salesPic !== "-") salesSet.add(comp.salesPic);
-            if(comp.csThPic !== "-") csSet.add(comp.csThPic);
+        rawData.forEach(comp => {
+            if(comp.salesPic && comp.salesPic !== "-") salesSet.add(comp.salesPic);
+            if(comp.csThPic && comp.csThPic !== "-") csSet.add(comp.csThPic);
         });
 
         const filterSales = document.getElementById('filterSales');
         const filterCS = document.getElementById('filterCS');
 
-        salesSet.forEach(name => {
-            filterSales.innerHTML += `<option value="${name}">${name}</option>`;
-        });
-
-        csSet.forEach(name => {
-            filterCS.innerHTML += `<option value="${name}">${name}</option>`;
-        });
+        salesSet.forEach(name => { filterSales.innerHTML += `<option value="${name}">${name}</option>`; });
+        csSet.forEach(name => { filterCS.innerHTML += `<option value="${name}">${name}</option>`; });
     }
 
-    // ฟังก์ชันจัดการการกรองข้อมูล
     function applyFilters() {
         const selectedSales = document.getElementById('filterSales').value;
         const selectedCS = document.getElementById('filterCS').value;
@@ -252,7 +271,6 @@
         renderTable();
     }
 
-    // ฟังก์ชันวาดตาราง (ใช้ตัวแปร filteredSchedules แทน)
     function renderTable() {
       const tbody = document.getElementById('scheduleBody');
       const resultCount = document.getElementById('resultCount');
@@ -261,7 +279,7 @@
       resultCount.innerText = `แสดงข้อมูล ${filteredSchedules.length} บริษัท`;
 
       if(filteredSchedules.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-500">🔍 ไม่พบข้อมูลที่ตรงกับเงื่อนไขที่เลือก</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center p-8 text-gray-500 text-lg\">🔍 ไม่มีตารางงานสำหรับ 2 เดือนนี้ (หรือเงื่อนไขที่เลือก)</td></tr>`;
         return;
       }
 
@@ -270,11 +288,10 @@
 
       filteredSchedules.forEach(company => {
         const tr = document.createElement('tr');
-        // เพิ่มไอคอนคนตัวเล็กๆ บอกชื่อเซลล์และ CS ใต้ชื่อบริษัท
         tr.innerHTML = `
-            <td class="company-cell pl-4" onclick="openSidebar('${company.id}')">
+            <td class=\"company-cell pl-4\" onclick=\"openSidebar('${company.id}')\">
                 🏢 ${company.name}
-                <div class="text-xs font-normal text-gray-400 mt-1">S: ${company.salesPic} | C: ${company.csThPic}</div>
+                <div class=\"text-xs font-normal text-gray-400 mt-1\">S: ${company.salesPic} | C: ${company.csThPic}</div>
             </td>`;
 
         months.forEach(month => {
@@ -321,10 +338,10 @@
         const item = document.createElement('div');
         item.className = 'timeline-item';
         item.innerHTML = `
-          <div class="timeline-dot ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.3)]"></div>
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">${timing}</span>
-          <h4 class="text-md font-bold text-white mt-1">${task.phase}</h4>
-          <p class="text-sm text-gray-400">📝 ${task.name}</p>
+          <div class=\"timeline-dot ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.3)]\"></div>
+          <span class=\"text-xs font-bold text-gray-500 uppercase tracking-wider\">${timing}</span>
+          <h4 class=\"text-md font-bold text-white mt-1\">${task.phase}</h4>
+          <p class=\"text-sm text-gray-400\">📝 ${task.name}</p>
         `;
         timelineContainer.appendChild(item);
       });
