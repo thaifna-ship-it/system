@@ -62,19 +62,26 @@
   <div class="max-w-7xl mx-auto">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div>
-        <h1 class="text-3xl font-extrabold text-white">📅 Overview Schedule</h1>
-        <p class="text-gray-400 mt-2">แผนงานภาพรวม (รองรับการข้ามปีปฏิทิน)</p>
+        <h1 class="text-3xl font-extrabold text-white" data-i18n="title">📅 Overview Schedule</h1>
+        <p class="text-gray-400 mt-2" data-i18n="subtitle">แผนงานภาพรวม (รองรับการข้ามปีปฏิทิน)</p>
       </div>
-      <div class="flex flex-wrap gap-4 text-sm bg-[#111827] p-3 rounded-lg border border-gray-800">
-        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div> Base Setup</span>
-        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-500"></div> Content/Batch 1</span>
-        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div> Content/Batch 2</span>
-        <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-orange-500"></div> Improve Page</span>
+      
+      <div class="flex flex-col items-end gap-3">
+        <button onclick="toggleLang()" id="langToggleBtn" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 transition text-sm font-bold shadow-md">
+          🇯🇵 日本語
+        </button>
+
+        <div class="flex flex-wrap gap-4 text-sm bg-[#111827] p-3 rounded-lg border border-gray-800">
+          <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div> <span data-i18n="baseSetup">Base Setup</span></span>
+          <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-500"></div> <span data-i18n="batch1">Content/Batch 1</span></span>
+          <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div> <span data-i18n="batch2">Content/Batch 2</span></span>
+          <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-orange-500"></div> <span data-i18n="improve">Improve Page</span></span>
+        </div>
       </div>
     </div>
 
     <div class="flex flex-wrap gap-4 mb-6 bg-[#111827] p-4 rounded-xl border border-gray-800 items-center" id="filterArea" style="display: none;">
-      <span class="text-gray-400 font-semibold text-sm">🔍 กรองข้อมูล:</span>
+      <span class="text-gray-400 font-semibold text-sm" data-i18n="filterLabel">🔍 กรองข้อมูล:</span>
       <div><select id="filterSales" class="filter-select" onchange="applyFilters()"><option value="ALL">-- Sales PIC ทั้งหมด --</option></select></div>
       <div><select id="filterCS" class="filter-select" onchange="applyFilters()"><option value="ALL">-- CS-TH PIC ทั้งหมด --</option></select></div>
       <div class="text-sm text-gray-500 ml-auto" id="resultCount">แสดงข้อมูล 0 บริษัท</div>
@@ -83,18 +90,18 @@
     <div class="bg-[#111827] rounded-xl border border-gray-800 overflow-hidden shadow-2xl relative">
       <div id="loadingData">
         <div class="spinner"></div>
-        <p>กำลังซิงค์ข้อมูลตารางงานจากฐานข้อมูล...</p>
+        <p data-i18n="syncing">กำลังซิงค์ข้อมูลตารางงานจากฐานข้อมูล...</p>
       </div>
       
       <div id="mainContent" style="display: none;">
         <div class="flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
           <button onclick="changeMonth(-1)" class="nav-btn">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-            เดือนก่อนหน้า
+            <span data-i18n="prevMonth">เดือนก่อนหน้า</span>
           </button>
           <h2 class="text-xl font-bold text-white tracking-widest uppercase text-center" id="monthRangeDisplay">MONTH - MONTH</h2>
           <button onclick="changeMonth(1)" class="nav-btn">
-            เดือนถัดไป
+            <span data-i18n="nextMonth">เดือนถัดไป</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
@@ -103,7 +110,10 @@
           <table id="scheduleTable">
             <thead>
               <tr>
-                <th rowspan="2" class="w-48 text-left pl-4">รายชื่อบริษัท<br><span class="text-xs font-normal text-gray-400">(คลิกเพื่อดูรายละเอียด)</span></th>
+                <th rowspan="2" class="w-48 text-left pl-4">
+                  <span data-i18n="companyName">รายชื่อบริษัท</span><br>
+                  <span class="text-xs font-normal text-gray-400" data-i18n="clickDetails">(คลิกเพื่อดูรายละเอียด)</span>
+                </th>
                 <th colspan="4" class="text-blue-400" id="currentMonthLabel">Month 1</th>
                 <th colspan="4" class="text-purple-400" id="nextMonthLabel">Month 2</th>
               </tr>
@@ -134,7 +144,7 @@
     </div>
     <div class="p-6 overflow-y-auto flex-1" id="sideTimeline"></div>
     <div class="p-6 border-t border-gray-700 bg-[#1e293b]">
-      <a href="Dailylog.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition shadow-lg">
+      <a href="Dailylog.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition shadow-lg" data-i18n="gotoDailyLog">
         ไปที่หน้าบันทึก DailyLog
       </a>
     </div>
@@ -144,11 +154,87 @@
     // ⚠️ นำ URL ของ Web App คุณมาใส่ที่นี่
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
     
+    // --- ระบบเปลี่ยนภาษา (i18n) ---
+    const i18n = {
+      th: {
+        title: "📅 Overview Schedule",
+        subtitle: "แผนงานภาพรวม (รองรับการข้ามปีปฏิทิน)",
+        baseSetup: "Base Setup",
+        batch1: "Content/Batch 1",
+        batch2: "Content/Batch 2",
+        improve: "Improve Page",
+        filterLabel: "🔍 กรองข้อมูล:",
+        salesAll: "-- Sales PIC ทั้งหมด --",
+        csAll: "-- CS-TH PIC ทั้งหมด --",
+        syncing: "กำลังซิงค์ข้อมูลตารางงานจากฐานข้อมูล...",
+        prevMonth: "เดือนก่อนหน้า",
+        nextMonth: "เดือนถัดไป",
+        companyName: "รายชื่อบริษัท",
+        clickDetails: "(คลิกเพื่อดูรายละเอียด)",
+        gotoDailyLog: "ไปที่หน้าบันทึก DailyLog",
+        emptyTable: "🔍 ไม่มีตารางงานสำหรับเดือน/ปี หรือเงื่อนไขที่เลือก",
+        showingData: (count) => `แสดงข้อมูล ${count} บริษัท`,
+        thisMonth: "เดือนนี้",
+        nextMonthText: "เดือนหน้า",
+        langBtn: "🇯🇵 日本語"
+      },
+      jp: {
+        title: "📅 スケジュール概要",
+        subtitle: "全体スケジュール（年またぎ対応）",
+        baseSetup: "基本設定",
+        batch1: "コンテンツ/バッチ 1",
+        batch2: "コンテンツ/バッチ 2",
+        improve: "ページ改善",
+        filterLabel: "🔍 フィルター:",
+        salesAll: "-- すべての営業担当 --",
+        csAll: "-- すべてのCS担当 --",
+        syncing: "データベースから同期中...",
+        prevMonth: "前の月",
+        nextMonth: "次の月",
+        companyName: "会社名",
+        clickDetails: "(クリックして詳細を表示)",
+        gotoDailyLog: "DailyLog記録ページへ",
+        emptyTable: "🔍 選択した月/年または条件のスケジュールはありません",
+        showingData: (count) => `${count} 社を表示中`,
+        thisMonth: "今月",
+        nextMonthText: "来月",
+        langBtn: "🇹🇭 ภาษาไทย"
+      }
+    };
+
+    let currentLang = 'th';
+
+    function toggleLang() {
+      currentLang = currentLang === 'th' ? 'jp' : 'th';
+      document.getElementById('langToggleBtn').innerText = i18n[currentLang].langBtn;
+      
+      // เปลี่ยนข้อความ Static ในหน้าจอ
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[currentLang][key]) {
+          el.innerText = i18n[currentLang][key];
+        }
+      });
+
+      // อัปเดต Dropdown และตาราง ถ้ามีการโหลดข้อมูลมาแล้ว
+      if (rawData.length > 0) {
+        const prevSales = document.getElementById('filterSales').value;
+        const prevCS = document.getElementById('filterCS').value;
+        
+        setupFiltersFromRaw();
+        
+        document.getElementById('filterSales').value = prevSales;
+        document.getElementById('filterCS').value = prevCS;
+        
+        renderTable();
+      }
+    }
+    // ---------------------------------
+
     let rawData = [];
     let allSchedules = [];
     let filteredSchedules = [];
     
-    // สถานะเดือนและปีที่กำลังแสดง
     let displayMonthNum = new Date().getMonth() + 1; 
     let displayYearNum = new Date().getFullYear();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -172,7 +258,6 @@
       }
     }
 
-    // ฟังก์ชันเปลี่ยนเดือน โดยมีการทดปี
     function changeMonth(step) {
       displayMonthNum += step;
       if(displayMonthNum > 12) {
@@ -185,7 +270,6 @@
       processAndRender(displayMonthNum, displayYearNum);
     }
 
-    // ฟังก์ชันดึงข้อมูลมาเทียบเดือนและ "ปี"
     function processAndRender(startMonth, startYear) {
       let nextMonthNum = startMonth + 1;
       let nextYear = startYear;
@@ -197,7 +281,6 @@
       const currentMStr = "M" + startMonth;
       const nextMStr = "M" + nextMonthNum;
 
-      // อัปเดตข้อความบน UI ให้เห็นปีชัดเจน
       document.getElementById('currentMonthLabel').innerText = `${monthNames[startMonth-1]} ${startYear}`;
       document.getElementById('nextMonthLabel').innerText = `${monthNames[nextMonthNum-1]} ${nextYear}`;
       document.getElementById('monthRangeDisplay').innerText = `${monthNames[startMonth-1]} ${startYear} - ${monthNames[nextMonthNum-1]} ${nextYear}`;
@@ -206,7 +289,6 @@
         let tasks = [];
         const sched = row.data;
         
-        // ฟังก์ชันช่วยเช็คว่าตรงกับ เดือนและปี ที่แสดงผลอยู่หรือไม่
         const checkTiming = (tMonth, tYear, tWeek, pName, tName, bType) => {
             let ty = String(tYear);
             if (tMonth === currentMStr && ty === String(startYear)) {
@@ -247,7 +329,6 @@
         };
       });
 
-      // กรองบริษัทที่มีงานในเดือน+ปี ที่เลือก
       allSchedules = allSchedules.filter(c => c.tasks.length > 0);
       applyFilters();
     }
@@ -263,6 +344,10 @@
 
         const filterSales = document.getElementById('filterSales');
         const filterCS = document.getElementById('filterCS');
+
+        // รีเซ็ต Option แรกตามภาษา
+        filterSales.innerHTML = `<option value="ALL">${i18n[currentLang].salesAll}</option>`;
+        filterCS.innerHTML = `<option value="ALL">${i18n[currentLang].csAll}</option>`;
 
         salesSet.forEach(name => { filterSales.innerHTML += `<option value="${name}">${name}</option>`; });
         csSet.forEach(name => { filterCS.innerHTML += `<option value="${name}">${name}</option>`; });
@@ -286,10 +371,10 @@
       const resultCount = document.getElementById('resultCount');
       
       tbody.innerHTML = '';
-      resultCount.innerText = `แสดงข้อมูล ${filteredSchedules.length} บริษัท`;
+      resultCount.innerText = i18n[currentLang].showingData(filteredSchedules.length);
 
       if(filteredSchedules.length === 0) {
-        tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center p-8 text-gray-500 text-lg\">🔍 ไม่มีตารางงานสำหรับเดือน/ปี หรือเงื่อนไขที่เลือก</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-500 text-lg">${i18n[currentLang].emptyTable}</td></tr>`;
         return;
       }
 
@@ -299,9 +384,9 @@
       filteredSchedules.forEach(company => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class=\"company-cell pl-4\" onclick=\"openSidebar('${company.id}')\">
+            <td class="company-cell pl-4" onclick="openSidebar('${company.id}')">
                 🏢 ${company.name}
-                <div class=\"text-xs font-normal text-gray-400 mt-1\">S: ${company.salesPic} | C: ${company.csThPic}</div>
+                <div class="text-xs font-normal text-gray-400 mt-1">S: ${company.salesPic} | C: ${company.csThPic}</div>
             </td>`;
 
         months.forEach(month => {
@@ -341,20 +426,21 @@
         if(task.type.includes('b2')) dotColor = "bg-purple-500";
         if(task.type.includes('improve')) dotColor = "bg-orange-500";
 
-        // เพิ่มการแสดงปีปฏิทินที่ Sidebar เพื่อความชัดเจน
         let currentYearShow = displayYearNum;
         let nextYearShow = (displayMonthNum === 12) ? displayYearNum + 1 : displayYearNum;
+        
+        // ใช้ข้อมูลภาษาที่เลือกมาแสดง
         const timing = task.month === 'current' 
-            ? `เดือนนี้ - ${task.week} ${currentYearShow}` 
-            : `เดือนหน้า - ${task.week} ${nextYearShow}`;
+            ? `${i18n[currentLang].thisMonth} - ${task.week} ${currentYearShow}` 
+            : `${i18n[currentLang].nextMonthText} - ${task.week} ${nextYearShow}`;
 
         const item = document.createElement('div');
         item.className = 'timeline-item';
         item.innerHTML = `
-          <div class=\"timeline-dot ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.3)]\"></div>
-          <span class=\"text-xs font-bold text-gray-500 uppercase tracking-wider\">${timing}</span>
-          <h4 class=\"text-md font-bold text-white mt-1\">${task.phase}</h4>
-          <p class=\"text-sm text-gray-400\">📝 ${task.name}</p>
+          <div class="timeline-dot ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.3)]"></div>
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">${timing}</span>
+          <h4 class="text-md font-bold text-white mt-1">${task.phase}</h4>
+          <p class="text-sm text-gray-400">📝 ${task.name}</p>
         `;
         timelineContainer.appendChild(item);
       });
