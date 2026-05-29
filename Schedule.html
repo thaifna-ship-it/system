@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Module: Schedule</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
     :root{--bg:#0f172a;--card:#111827;--muted:#334155;--border:#1f2937;--fg:#e5e7eb;--acc:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6;--batch-bg:#1e293b}
     html,body{background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,sans-serif;}
@@ -22,14 +23,20 @@
     }
     input:focus, select:focus{border-color: var(--warn)}
     
-    /* Grid แบบ 6 คอลัมน์ (รวมช่องใส่จำนวน) */
-    .task-row { display:grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 12px; }
+    /* Grid แบบ 7 คอลัมน์ (เพิ่มช่องจับลาก + ช่องใส่จำนวน) */
+    .task-row { display:grid; grid-template-columns: auto 2.5fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 12px; }
     .task-name { font-weight: 500; color: #e2e8f0; }
     .auto-text { color: var(--acc); font-weight: bold; font-size: 0.9rem; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; text-align: center;}
     
     .batch-container { margin-top: 30px; }
     .batch-card { background: var(--batch-bg); border: 1px dashed var(--muted); border-radius: 12px; padding: 20px; margin-bottom: 20px; position: relative;}
-    .batch-title { font-size: 1.2rem; font-weight: bold; color: var(--blue); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
+    .batch-title { font-size: 1.2rem; font-weight: bold; color: var(--blue);}
+    .batch-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+    .batch-title-wrap { display:flex; align-items:center; gap:10px; }
+    .drag-handle, .batch-drag-handle { cursor: grab; color: #94a3b8; font-weight: 800; padding: 0 8px; user-select: none; line-height: 1; }
+    .drag-handle:active, .batch-drag-handle:active { cursor: grabbing; }
+    .drag-placeholder { width: 24px; display: inline-block; }
+    .dragging-row { opacity: 0.6; background: rgba(59, 130, 246, 0.15); }
     .remove-btn { background: transparent; border: 1px solid var(--err); color: var(--err); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; width: auto;}
     .remove-btn:hover { background: var(--err); color: #fff;}
 
@@ -183,6 +190,48 @@
       }
     });
 
+
+    // -------------------------------------------------------------
+    // ระบบลากเรียงลำดับ Process / Batch
+    // -------------------------------------------------------------
+    function initSortable() {
+      if (typeof Sortable === 'undefined') return;
+
+      const baseTasks = document.getElementById('baseTasks');
+      if (baseTasks && !baseTasks.dataset.sortableReady) {
+        new Sortable(baseTasks, {
+          animation: 150,
+          handle: '.drag-handle',
+          draggable: '.base-task',
+          ghostClass: 'dragging-row'
+        });
+        baseTasks.dataset.sortableReady = 'true';
+      }
+
+      document.querySelectorAll('.batch-task-list').forEach(list => {
+        if (!list.dataset.sortableReady) {
+          new Sortable(list, {
+            animation: 150,
+            handle: '.drag-handle',
+            draggable: '.normal-task',
+            ghostClass: 'dragging-row'
+          });
+          list.dataset.sortableReady = 'true';
+        }
+      });
+
+      const batchContainer = document.getElementById('batchContainer');
+      if (batchContainer && !batchContainer.dataset.sortableReady) {
+        new Sortable(batchContainer, {
+          animation: 150,
+          handle: '.batch-drag-handle',
+          draggable: '.batch-card',
+          ghostClass: 'dragging-row'
+        });
+        batchContainer.dataset.sortableReady = 'true';
+      }
+    }
+
     // -------------------------------------------------------------
     // ฟอร์ม Base Setup
     // -------------------------------------------------------------
@@ -191,25 +240,29 @@
       div.className = 'task-row base-task'; div.dataset.type = 'standard';
       const qtyHtml = needsQty ? `<input type="number" class="val-qty" placeholder="จำนวน" min="1" value="${qty}">` : `<div></div>`;
       
-      div.innerHTML = `<div class="task-name">• ${name}</div>
+      div.innerHTML = `<span class="drag-handle" title="ลากเพื่อเรียงลำดับ">☰</span>
+        <div class="task-name">• ${name}</div>
         <select class="val-week">${getWeekOptions(week)}</select>
         <select class="val-month">${getMonthOptions(month)}</select>
         <select class="val-year">${getYearOptions(year)}</select>
         ${qtyHtml}
         <button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
       document.getElementById('baseTasks').appendChild(div);
+      initSortable();
     }
 
     function addCustomBaseTask(name='', week='', month='', year='') {
       const div = document.createElement('div');
       div.className = 'task-row base-task'; div.dataset.type = 'custom';
-      div.innerHTML = `<input type="text" class="custom-name" placeholder="พิมพ์ชื่อ Process..." value="${name}">
+      div.innerHTML = `<span class="drag-handle" title="ลากเพื่อเรียงลำดับ">☰</span>
+        <input type="text" class="custom-name" placeholder="พิมพ์ชื่อ Process..." value="${name}">
         <select class="val-week">${getWeekOptions(week)}</select>
         <select class="val-month">${getMonthOptions(month)}</select>
         <select class="val-year">${getYearOptions(year)}</select>
         <div></div>
         <button type="button" class="remove-btn" onclick="this.parentElement.remove()">ลบ</button>`;
       document.getElementById('baseTasks').appendChild(div);
+      initSortable();
     }
 
     function renderDefaultBaseTasks() {
@@ -252,8 +305,11 @@
 
       const batchHtml = `
         <div class="batch-card" id="${batchId}">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="batch-title">📦 Content Batch #${batchCount}</div>
+          <div class="batch-header">
+            <div class="batch-title-wrap">
+              <span class="batch-drag-handle" title="ลากเพื่อเรียงลำดับ Batch">☰</span>
+              <div class="batch-title">📦 Content Batch #${batchCount}</div>
+            </div>
             <div>
               <button type="button" class="btn" style="background:var(--acc); color:#fff; padding:6px 12px; font-size:0.8rem; margin-right:10px; width:auto;" onclick="addCustomBatchTask('${batchId}')">+ เพิ่ม Process</button>
               <button type="button" class="remove-btn" onclick="document.getElementById('${batchId}').remove()">ลบ Batch</button>
@@ -267,6 +323,7 @@
           ${generateBatchPublish(batchId, d.publish)}
           
           <div class="task-row" style="margin-top:20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+            <span class="drag-placeholder"></span>
             <div class="task-name" style="color:var(--warn)">✨ Improve page & Public (Auto)</div>
             <div class="auto-text p1">Phase 1: -</div>
             <div class="auto-text p2">Phase 2: -</div>
@@ -289,6 +346,7 @@
       } else {
         calculateImprove(batchId);
       }
+      initSortable();
     }
 
     function generateBatchTask(taskName, needsNumber, savedData, isCustom = false) {
@@ -299,6 +357,7 @@
          : `<div class="task-name-text">- ${taskName}</div>`;
 
       return `<div class="task-row normal-task" data-iscustom="${isCustom}">
+        <span class="drag-handle" title="ลากเพื่อเรียงลำดับ">☰</span>
         ${nameHtml}
         <select class="val-week">${getWeekOptions(savedData.week||'')}</select>
         <select class="val-month">${getMonthOptions(savedData.month||'')}</select>
@@ -313,11 +372,13 @@
         if(!list) return;
         const html = generateBatchTask('', true, {}, true);
         list.insertAdjacentHTML('beforeend', html);
+        initSortable();
     }
 
     // Publish Article (ไม่มีปุ่มลบ)
     function generateBatchPublish(batchId, savedData) {
       return `<div class="task-row publish-task" style="background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
+        <span class="drag-placeholder"></span>
         <div class="task-name-text" style="color:var(--blue)">- Publish Article</div>
         <select class="val-week" onchange="calculateImprove('${batchId}')">${getWeekOptions(savedData.week||'')}</select>
         <select class="val-month" onchange="calculateImprove('${batchId}')">${getMonthOptions(savedData.month||'')}</select>
@@ -381,6 +442,7 @@
         }
       });
       (data.batches || []).forEach(batchData => addBatch(batchData));
+      initSortable();
     }
 
     function collectScheduleData() {
@@ -538,7 +600,7 @@
       });
     }
 
-    window.onload = () => { renderDefaultBaseTasks(); addBatch(); };
+    window.onload = () => { renderDefaultBaseTasks(); addBatch(); initSortable(); };
   </script>
 </body>
 </html>
