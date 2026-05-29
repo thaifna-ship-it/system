@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>View Daily Log | Project Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0b1220; --card: #111827; --border: #1f2937;
+      --acc: #22c55e; --warn: #f59e0b; --err: #ef4444;
+    }
+    body { background-color: var(--bg); color: #e5e7eb; font-family: ui-sans-serif, system-ui, sans-serif; }
+    
+    /* Scrollbar ตกแต่งให้เข้ากับ Theme */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1000px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 16px; vertical-align: top; }
+    th { background-color: #1e293b; color: #cbd5e1; font-weight: 600; text-align: left; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; }
+    tr:hover td { background-color: #1e293b; transition: background-color 0.2s; }
+    
+    .filter-select {
+      background-color: #1e293b; color: #e2e8f0; border: 1px solid #334155; 
+      padding: 10px 16px; border-radius: 8px; outline: none; font-size: 0.95rem;
+      min-width: 220px; transition: border-color 0.2s;
+    }
+    .filter-select:focus { border-color: var(--acc); }
+
+    .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--acc); animation: spin 1s linear infinite; margin: 0 auto 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .badge { padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap; }
+    .badge-ok { background: rgba(34, 197, 94, 0.1); color: var(--acc); border: 1px solid rgba(34, 197, 94, 0.3); }
+    .badge-warn { background: rgba(239, 68, 68, 0.1); color: var(--err); border: 1px solid rgba(239, 68, 68, 0.3); }
+  </style>
+</head>
+<body class="p-6">
+
+  <div class="max-w-7xl mx-auto">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-teal-400 flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+          View Daily Log
+        </h1>
+        <p class="text-gray-400 mt-2">ประวัติการทำงานรายวัน ฟีดแบคลูกค้า และการแจ้งเตือนปัญหา</p>
+      </div>
+      <a href="index.html" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg border border-gray-600 transition text-sm font-bold shadow-md flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+        กลับหน้าหลัก
+      </a>
+    </div>
+
+    <div class="bg-[#111827] p-5 rounded-xl border border-gray-800 flex flex-wrap gap-4 items-center mb-6 shadow-lg">
+      <span class="text-gray-400 font-semibold text-sm">🔍 กรองข้อมูล:</span>
+      
+      <div>
+        <select id="filterPic" class="filter-select" onchange="applyFilters()">
+          <option value="ALL">-- Staff (PIC) ทั้งหมด --</option>
+        </select>
+      </div>
+      
+      <div>
+        <select id="filterCompany" class="filter-select" onchange="applyFilters()">
+          <option value="ALL">-- บริษัททั้งหมด --</option>
+        </select>
+      </div>
+
+      <div class="text-sm text-gray-500 ml-auto font-medium bg-gray-800 px-4 py-2 rounded-lg" id="resultCount">
+        กำลังโหลดข้อมูล...
+      </div>
+    </div>
+
+    <div class="bg-[#111827] rounded-xl border border-gray-800 overflow-hidden shadow-2xl relative">
+      
+      <div id="loadingData" class="flex flex-col items-center justify-center p-20 text-gray-400">
+        <div class="spinner"></div>
+        <p>กำลังดึงข้อมูลประวัติการทำงาน...</p>
+      </div>
+      
+      <div id="mainContent" style="display: none;" class="overflow-x-auto">
+        <table id="logsTable">
+          <thead>
+            <tr>
+              <th class="w-32">วันที่ (Date)</th>
+              <th class="w-24">PIC</th>
+              <th class="w-48">รายชื่อบริษัท</th>
+              <th class="w-1/3">รายละเอียดงาน (Work Details)</th>
+              <th class="w-1/3">ฟีดแบค (Feedback)</th>
+              <th class="w-32 text-center">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="logsBody">
+            </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ นำ URL ของ Web App คุณมาใส่ที่นี่
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBmhndcZUP7Tgxo9w_N_DzuJbl9QpUDe86ytNBTuNWbotcTTINVVxFRNlNXMbAvZtziQ/exec";
+
+    let allLogs = [];
+    let filteredLogs = [];
+
+    // เริ่มดึงข้อมูลทันทีที่เปิดหน้า
+    window.onload = async () => {
+      try {
+        const response = await fetch(SCRIPT_URL + "?action=getDailyLogs");
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          allLogs = result.data;
+          filteredLogs = [...allLogs];
+          
+          setupFilters();
+          renderTable();
+          
+          document.getElementById('loadingData').style.display = 'none';
+          document.getElementById('mainContent').style.display = 'block';
+        } else {
+          showError("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        showError("ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
+      }
+    };
+
+    function showError(msg) {
+      document.getElementById('loadingData').innerHTML = `<p class="text-red-500 font-bold">❌ ${msg}</p>`;
+    }
+
+    // เตรียมตัวเลือกใน Dropdown จากข้อมูลที่ดึงมา
+    function setupFilters() {
+      const picSet = new Set();
+      const companySet = new Set();
+
+      allLogs.forEach(log => {
+        if(log.staff) picSet.add(log.staff.trim());
+        if(log.company) companySet.add(log.company.trim());
+      });
+
+      const picSelect = document.getElementById('filterPic');
+      const companySelect = document.getElementById('filterCompany');
+
+      // เรียงตามตัวอักษรเพื่อความสวยงาม
+      Array.from(picSet).sort().forEach(pic => {
+        picSelect.innerHTML += `<option value="${pic}">${pic}</option>`;
+      });
+
+      Array.from(companySet).sort().forEach(company => {
+        companySelect.innerHTML += `<option value="${company}">${company}</option>`;
+      });
+    }
+
+    // เมื่อมีการเปลี่ยนตัวเลือกใน Dropdown
+    function applyFilters() {
+      const selectedPic = document.getElementById('filterPic').value;
+      const selectedCompany = document.getElementById('filterCompany').value;
+
+      filteredLogs = allLogs.filter(log => {
+        const matchPic = (selectedPic === "ALL") || (log.staff && log.staff.trim() === selectedPic);
+        const matchCompany = (selectedCompany === "ALL") || (log.company && log.company.trim() === selectedCompany);
+        return matchPic && matchCompany;
+      });
+
+      renderTable();
+    }
+
+    // แสดงผลข้อมูลลงตาราง
+    function renderTable() {
+      const tbody = document.getElementById('logsBody');
+      const resultCount = document.getElementById('resultCount');
+      
+      tbody.innerHTML = '';
+      resultCount.innerText = `แสดงข้อมูล ${filteredLogs.length} รายการ`;
+
+      if(filteredLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500 text-lg">🔍 ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+        return;
+      }
+
+      filteredLogs.forEach(log => {
+        // จัดการฟอร์แมตวันที่ให้อ่านง่าย
+        let dateObj = new Date(log.date);
+        let dateStr = isNaN(dateObj) ? log.date : dateObj.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // จัดการสถานะ Blocker
+        let statusHtml = `<span class="badge badge-ok">✓ ปกติ</span>`;
+        if (log.needSupport === true || log.needSupport === "TRUE") {
+          if (log.actionTaken === true || log.actionTaken === "TRUE") {
+            statusHtml = `<span class="badge badge-ok">✓ แก้ไขแล้ว</span>`;
+          } else {
+            statusHtml = `<span class="badge badge-warn">⚠️ Need Support</span>`;
+          }
+        }
+
+        // จัดการเรื่องการขึ้นบรรทัดใหม่ในช่อง Textarea
+        let workDetail = log.workDetail ? log.workDetail.replace(/\n/g, '<br>') : '-';
+        let feedback = log.customerFeedback ? log.customerFeedback.replace(/\n/g, '<br>') : '-';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-gray-300 font-medium">${dateStr}</td>
+          <td class="font-bold text-teal-400">${log.staff || '-'}</td>
+          <td class="font-bold text-white">${log.company || '-'}</td>
+          <td class="text-sm text-gray-400 leading-relaxed">${workDetail}</td>
+          <td class="text-sm text-blue-200 leading-relaxed">${feedback}</td>
+          <td class="text-center">${statusHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
