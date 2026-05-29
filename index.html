@@ -46,39 +46,54 @@
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
-    <a href="New customer.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+    
+    <a href="New customer.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left h-full">
       <div class="icon-box bg-blue-500/10 text-blue-500">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
       </div>
       <h3 class="text-xl font-bold text-white mb-2">New Customer</h3>
-      <p class="text-gray-400 text-sm mb-4">สำหรับทีม Sales เพิ่มข้อมูลลูกค้าใหม่และรายละเอียด PIC</p>
+      <p class="text-gray-400 text-sm mb-4 flex-1">สำหรับทีม Sales เพิ่มข้อมูลลูกค้าใหม่และรายละเอียด PIC</p>
       <span class="text-blue-500 text-xs font-semibold uppercase tracking-wider">Sales Team Only →</span>
     </a>
 
-    <a href="Dailylog.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left border-l-4 border-l-green-500">
-      <div class="icon-box bg-green-500/10 text-green-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-      </div>
-      <h3 class="text-xl font-bold text-white mb-2">DailyLog</h3>
-      <p class="text-gray-400 text-sm mb-4">สำหรับทีม CS บันทึกงานรายวัน, Feedback และปัญหาที่พบ</p>
-      <span class="text-green-500 text-xs font-semibold uppercase tracking-wider">CS Team Only →</span>
-    </a>
+    <div class="flex flex-col gap-4 h-full">
+      
+      <a href="Dailylog.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left border-l-4 border-l-green-500 flex-1">
+        <div class="icon-box bg-green-500/10 text-green-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">DailyLog</h3>
+        <p class="text-gray-400 text-sm mb-4 flex-1">สำหรับทีม CS บันทึกงานรายวัน, Feedback และปัญหาที่พบ</p>
+        <span class="text-green-500 text-xs font-semibold uppercase tracking-wider mt-auto">CS Team Only →</span>
+      </a>
 
-    <a href="Schedule.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+      <a href="ViewDailylog.html" class="nav-card p-4 rounded-xl flex items-center gap-4 text-left border-l-4 border-l-teal-500 group">
+        <div class="bg-teal-500/10 text-teal-500 p-3 rounded-lg group-hover:bg-teal-500 group-hover:text-white transition-colors duration-300">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+        </div>
+        <div>
+          <h4 class="text-md font-bold text-white">View Daily Log</h4>
+          <p class="text-gray-400 text-xs mt-1">ดูประวัติการบันทึกงานทั้งหมด</p>
+        </div>
+      </a>
+      
+    </div>
+
+    <a href="Schedule.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left h-full">
       <div class="icon-box bg-orange-500/10 text-orange-500">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
       </div>
       <h3 class="text-xl font-bold text-white mb-2">Schedule</h3>
-      <p class="text-gray-400 text-sm mb-4">จัดทำตารางเวลาและกำหนดการรายบริษัท (Individual Plan)</p>
+      <p class="text-gray-400 text-sm mb-4 flex-1">จัดทำตารางเวลาและกำหนดการรายบริษัท (Individual Plan)</p>
       <span class="text-orange-500 text-xs font-semibold uppercase tracking-wider">Planning →</span>
     </a>
 
-    <a href="Schedule Overview.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left">
+    <a href="Schedule Overview.html" class="nav-card p-6 rounded-2xl flex flex-col items-start text-left h-full">
       <div class="icon-box bg-purple-500/10 text-purple-500">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
       </div>
       <h3 class="text-xl font-bold text-white mb-2">Overview</h3>
-      <p class="text-gray-400 text-sm mb-4">ภาพรวมตารางงานทั้งบริษัทในเดือนนี้และเดือนถัดไป</p>
+      <p class="text-gray-400 text-sm mb-4 flex-1">ภาพรวมตารางงานทั้งบริษัทในเดือนนี้และเดือนถัดไป</p>
       <span class="text-purple-500 text-xs font-semibold uppercase tracking-wider">All Staff / Viewer →</span>
     </a>
   </div>
