@@ -60,6 +60,17 @@
     .status{display:block;margin-top:12px; text-align:center}
     .ok{color:var(--acc)}
     .loading-text { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; display: inline-block; }
+
+    /* ปุ่ม Action แถวล่าง */
+    .btn-group { display: flex; gap: 15px; margin-top: 15px; }
+    .btn-cancel { background: transparent; border: 1px solid var(--err); color: var(--err); flex: 1; }
+    .btn-cancel:hover { background: rgba(239, 68, 68, 0.1); }
+    
+    /* กล่องสำหรับกรอกวันที่ยกเลิกสัญญา */
+    .cancel-area {
+      display: none; background: rgba(239, 68, 68, 0.05); padding: 20px;
+      border: 1px dashed var(--err); border-radius: 12px; margin-top: 15px;
+    }
   </style>
 </head>
 <body>
@@ -109,8 +120,23 @@
           </label>
         </div>
 
+        <!-- ปุ่มสำหรับ Save ปกติ และ ปุ่มเรียก Cancel Contract -->
+        <div class="full btn-group">
+          <button type="submit" id="submitBtn" class="btn primary" style="flex: 2; margin-top: 0;">บันทึกข้อมูล (Save Log)</button>
+          <button type="button" id="showCancelBtn" class="btn btn-cancel" style="margin-top: 0;" onclick="toggleCancelArea()">🛑 Cancel Contract</button>
+        </div>
+
+        <!-- พื้นที่สำหรับกรอกข้อมูลการยกเลิกสัญญา (ซ่อนไว้เป็นค่าเริ่มต้น) -->
+        <div class="full cancel-area" id="cancelArea">
+          <label style="color: var(--err);">📅 ระบุวันที่สิ้นสุดสัญญา (Contract End Date) *จำเป็น</label>
+          <input type="date" id="cancelDate" style="border-color: rgba(239, 68, 68, 0.5); margin-bottom: 15px;" />
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="confirmCancelBtn" class="btn" style="background: var(--err); color: white; margin-top: 0; flex: 2;" onclick="handleCancelContract()">ยืนยันการแจ้งยกเลิกสัญญา</button>
+            <button type="button" class="btn" style="background: var(--muted); color: white; margin-top: 0; flex: 1;" onclick="toggleCancelArea()">ปิด</button>
+          </div>
+        </div>
+
         <div class="full">
-          <button type="submit" id="submitBtn" class="btn primary">บันทึกข้อมูล (Save Log)</button>
           <div id="statusMsg" class="status"></div>
         </div>
       </form>
@@ -134,7 +160,6 @@
         const result = await response.json();
         
         if (result.status === 'success') {
-          // ล้างข้อมูลเก่าและใส่ข้อมูลใหม่
           companyList.innerHTML = '';
           result.data.forEach(company => {
             const option = document.createElement('option');
@@ -155,35 +180,32 @@
       }
     }
 
-    // เรียกดึงข้อมูลบริษัทตอนเปิดหน้าเว็บ
     fetchCompanies();
 
-    // จัดการการส่งฟอร์ม
     const form = document.getElementById('formDaily');
     const statusMsg = document.getElementById('statusMsg');
     const submitBtn = document.getElementById('submitBtn');
 
+    // -------------------------------------------------------------
+    // ฟังก์ชัน 1: จัดการการส่งฟอร์ม Daily Log แบบปกติ (ไม่แก้ไขโครงสร้างเดิม)
+    // -------------------------------------------------------------
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      // ล็อกปุ่ม
       const originalBtnText = submitBtn.innerText;
       submitBtn.innerText = "กำลังบันทึกข้อมูล...";
       submitBtn.disabled = true;
       statusMsg.innerText = "";
       
-      // รวบรวมข้อมูล
       const formData = new FormData(form);
       const data = Object.fromEntries(formData.entries());
       data.needSupport = document.getElementById('needSupport').checked;
-      data.action = "addDailyLog"; // ระบุ action ให้ Apps Script รู้ว่าเป็น DailyLog
+      data.action = "addDailyLog";
 
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8',
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(data)
         });
 
@@ -192,8 +214,6 @@
         if (result.status === 'success') {
           statusMsg.innerText = "✅ บันทึกข้อมูลเรียบร้อยแล้ว";
           statusMsg.className = "status ok";
-          
-          // ล้างข้อมูลหลังบันทึก (เว้นวันที่กับผู้บันทึกไว้เผื่อบันทึกต่อ)
           form.company.value = "";
           form.workDetail.value = "";
           form.customerFeedback.value = "";
@@ -209,6 +229,87 @@
         submitBtn.disabled = false;
       }
     });
+
+    // -------------------------------------------------------------
+    // ฟังก์ชัน 2: แสดง/ซ่อน กล่องกรอกวันที่ยกเลิกสัญญา
+    // -------------------------------------------------------------
+    function toggleCancelArea() {
+      const cancelArea = document.getElementById('cancelArea');
+      cancelArea.style.display = cancelArea.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // -------------------------------------------------------------
+    // ฟังก์ชัน 3: ยืนยันการยกเลิกสัญญา ส่งไปบันทึกทั้ง 2 ชีท
+    // -------------------------------------------------------------
+    async function handleCancelContract() {
+      const logDate = document.getElementById('logDate').value;
+      const staff = form.staff.value;
+      const company = form.company.value;
+      const cancelDate = document.getElementById('cancelDate').value;
+
+      if (!staff || !company) {
+        alert("⚠️ กรุณาระบุ ชื่อผู้บันทึก (PIC) และ ชื่อบริษัท ก่อนทำการแจ้งยกเลิกสัญญา");
+        return;
+      }
+      if (!cancelDate) {
+        alert("⚠️ กรุณาระบุ วันที่สิ้นสุดสัญญา ให้ชัดเจน");
+        return;
+      }
+
+      if (!confirm(`คุณแน่ใจหรือไม่ที่จะแจ้งยกเลิกสัญญากับบริษัท "${company}" โดยมีผลวันที่ ${cancelDate}?`)) {
+        return;
+      }
+
+      const confirmBtn = document.getElementById('confirmCancelBtn');
+      const originalText = confirmBtn.innerText;
+      confirmBtn.innerText = "กำลังบันทึกข้อมูล...";
+      confirmBtn.disabled = true;
+      submitBtn.disabled = true;
+      statusMsg.innerText = "";
+
+      // จัดเตรียมข้อมูลส่งให้ GAS ผ่าน Action ใหม่
+      const data = {
+        action: "cancelContract",
+        logDate: logDate,
+        staff: staff,
+        company: company,
+        cancelDate: cancelDate,
+        workDetail: `🛑 แจ้งยกเลิกสัญญา (Contract Terminated)\nมีผลสิ้นสุดสัญญาในวันที่: ${cancelDate}`,
+        customerFeedback: "มีการยกเลิกสัญญาอย่างเป็นทางการ",
+        needSupport: false
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          statusMsg.innerText = "✅ บันทึกสถานะยกเลิกสัญญาเรียบร้อยแล้ว";
+          statusMsg.className = "status ok";
+          
+          form.company.value = "";
+          form.workDetail.value = "";
+          form.customerFeedback.value = "";
+          document.getElementById('needSupport').checked = false;
+          document.getElementById('cancelDate').value = "";
+          toggleCancelArea(); // ซ่อนกล่องลง
+        } else {
+          alert("❌ เกิดข้อผิดพลาด: " + result.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      } finally {
+        confirmBtn.innerText = originalText;
+        confirmBtn.disabled = false;
+        submitBtn.disabled = false;
+      }
+    }
   </script>
 </body>
 </html>
